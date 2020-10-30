@@ -15,8 +15,8 @@ In addition, [this blogpost](https://florianwilhelm.info/2018/11/working_efficie
 is an excellent entry point for learning how to organise your code well, especially
 in view of using *jupyter notebooks* within *jupyter lab*.
 
-The main bulk of the game development will probably be done using *numpy* and *tkinter*.
-We could also try to leverage the following packages:
+The main bulk of game development will probably be done using *numpy* and *tkinter* following [this blogpost](https://towardsdatascience.com/making-simple-games-in-python-f35f3ae6f31a).
+In addition, we could also try to leverage the following packages:
 
 - [game2dboard](https://pypi.org/project/game2dboard)
 - [pyGameMath](https://github.com/AlexMarinescu/pyGameMath)

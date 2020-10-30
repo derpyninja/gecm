@@ -1,3 +1,6 @@
+# Manual exclusions: all files > 50 MB MUST be excluded (!)
+/data/
+
 # Temporary and binary files
 *~
 *.py[cod]
