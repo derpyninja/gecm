@@ -1,9 +1,10 @@
 **G**ames in support of **E**cosystem **C**risis **M**anagement (gecm)
 ======================================================================
 
-Welcome! This is our student project on **G**ames in support of **E**cosystem **C**risis **M**anagement as part of the graduate course in [Foundations of Ecosystem Management](https://ecology.ethz.ch/education/master-courses/foundations-of-ecosystem-management.html)
-offered at **ETH Zurich** in the autumn semester of 2020. The team members are 
-Martina, Marco, Lena, Ella-Mona and Felix.
+Welcome to our student project on **G**ames in support of **E**cosystem **C**risis **M**anagement. 
+This repository was created as part of [Foundations of Ecosystem Management](https://ecology.ethz.ch/education/master-courses/foundations-of-ecosystem-management.html), 
+a graduate-level course offered at **ETH Zurich** in the autumn semester of 2020. 
+The team members are Martina, Marco, Lena, Ella-Mona and Felix.
 
 
 Description
