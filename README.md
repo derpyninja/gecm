@@ -1,15 +1,20 @@
 **G**ames in support of **E**cosystem **C**risis **M**anagement (gecm)
 ======================================================================
 
-A student project implemented by Martina, Marco, Lena, Ella-Mona and Felix as 
-part of a *ETH Zurich graduate course* in [Foundations of Ecosystem Management](https://ecology.ethz.ch/education/master-courses/foundations-of-ecosystem-management.html).
+Welcome! This is our student project on **G**ames in support of **E**cosystem **C**risis **M**anagement as part of the graduate course in [Foundations of Ecosystem Management](https://ecology.ethz.ch/education/master-courses/foundations-of-ecosystem-management.html)
+offered at **ETH Zurich** in the autumn semester of 2020. The team members are 
+Martina, Marco, Lena, Ella-Mona and Felix.
+
 
 Description
 ===========
 
-Please follow the steps outlined [here](https://pypi.org/project/PyScaffold) if you want to co-develop the package.
+If you want to co-develop the package, please follow the steps outlined [here](https://pypi.org/project/PyScaffold). 
+In addition, [this blogpost](https://florianwilhelm.info/2018/11/working_efficiently_with_jupyter_lab/)
+is an excellent entry point for learning how to organise your code well, especially
+in view of using *jupyter notebooks* within *jupyter lab*.
 
-The main bulk of the game development will probably take place using *numpy* and *tkinter*.
+The main bulk of the game development will probably be done using *numpy* and *tkinter*.
 We could also try to leverage the following packages:
 
 - [game2dboard](https://pypi.org/project/game2dboard)
