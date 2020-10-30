@@ -1,10 +1,8 @@
-====
-gecm
-====
+**G**ames in support of **E**cosystem **C**risis **M**anagement (gecm)
+======================================================================
 
-
-**G**ames in support of **E**cosystem **C**risis **M**anagement
-
+A student project implemented by Martina, Marco, Lena, Ella-Mona and Felix as 
+part of a *ETH Zurich graduate course* in [Foundations of Ecosystem Management](https://ecology.ethz.ch/education/master-courses/foundations-of-ecosystem-management.html).
 
 Description
 ===========
