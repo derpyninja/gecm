@@ -1,5 +1,5 @@
 import rasterio
-from constants import *
+#from constants import *
 #from skimage import io
 #from openpiv import tools
 import matplotlib.pyplot as plt
@@ -19,7 +19,8 @@ def roles(players):
         print('There are 6 roles for each player, Farmer 1 and 2, Forester 1 and 2 and Business representatives 1 and 2. Please distribute each role among yourselves')
     else:
         print(f'The number_of_players is /{players} but should be between 3 and 6')
-        
+
+
 def game(round=0):
     # ideally just the map itself imported, without the legend and so on, so that we know how many pixel is each field?
     
@@ -33,5 +34,3 @@ def game(round=0):
     plt.title(f'Map_{resolution}x{resolution}_{round}')
     plt.imshow(pyplot_map)
     plt.show()
-
-    

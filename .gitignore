@@ -1,5 +1,5 @@
 # Manual exclusions: all files > 50 MB MUST be excluded (!)
-/data/
+/data/raw/
 
 # Temporary and binary files
 *~
