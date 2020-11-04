@@ -1,3 +1,6 @@
+# individual
+/data/raw/
+
 # Temporary and binary files
 *~
 *.py[cod]
