@@ -46,4 +46,3 @@ def game(round=0):
     plt.title(f"Map_{resolution}x{resolution}_{round}")
     plt.imshow(pyplot_map)
     plt.show()
-# changed

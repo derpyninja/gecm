@@ -29,7 +29,6 @@ nfi_mapping = {
     "Windblow": 23,
 }
 
-
 def invert_dict(d):
     """
     Invert dictionary.
@@ -47,12 +46,14 @@ def invert_dict(d):
     return dict((v, k) for k, v in d.items())
 
 
-def int2class(int_array, max_string_length=40):
+def int2class(int_array, mapping=nfi_mapping, max_string_length=40):
     """
     Map integers to LULC classes.
 
     Parameters
     ----------
+    mapping : dict
+        Describes mapping between ints and strings of LULC classes.
     int_array : np.array (int)
         2D Array representing a LULC map via integers
 
@@ -63,7 +64,7 @@ def int2class(int_array, max_string_length=40):
     """
     class_array = deepcopy(int_array).astype("S{}".format(max_string_length))
     boolean_mask = int_array.mask
-    inverse_nfi_mapping = invert_dict(nfi_mapping)
+    inverse_nfi_mapping = invert_dict(mapping)
 
     # does work for np.ma
     if int_array.ndim > 1:

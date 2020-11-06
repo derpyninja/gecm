@@ -1,9 +1,9 @@
 import os
 import numpy as np
 import rasterio as rio
+from rasterio.plot import show
 import matplotlib.pyplot as plt
-from rasterio.plot import show, show_hist
-from src.gecm.dicts import nfi_mapping, int2class
+from src.gecm.dicts import int2class
 
 
 class Map(object):
@@ -11,12 +11,12 @@ class Map(object):
     Implements playing field class.
     """
 
-    def __init__(self, fpath):
+    def __init__(self, fpath, mapping):
         self.fpath = fpath
         self.src = rio.open(self.fpath)
         self.rows = self.src.width
         self.cols = self.src.height
-        self.lulc_mapping = nfi_mapping
+        self.mapping = mapping
 
     def read(self, masked=True):
         """
@@ -94,6 +94,7 @@ class Map(object):
 
 
 if __name__ == "__main__":
+    from src.gecm.dicts import nfi_mapping
 
     # define dirs
     data_raw = os.path.join("..", "..", "data", "raw")
@@ -102,7 +103,7 @@ if __name__ == "__main__":
 
     # load map
     fpath_map = os.path.join(data_processed, "NFI_rasterized_40_40.tif")
-    field = Map(fpath=fpath_map)
+    field = Map(fpath=fpath_map, mapping=nfi_mapping)
 
     # create plot
     field.show()
