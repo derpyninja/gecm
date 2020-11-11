@@ -94,7 +94,7 @@ class Map(object):
 
 
 if __name__ == "__main__":
-    from src.gecm.dicts import nfi_mapping
+    from src.gecm.dicts import nfi_mapping, nfi_mapping_v2
 
     # define dirs
     data_raw = os.path.join("..", "..", "data", "raw")

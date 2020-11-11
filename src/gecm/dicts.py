@@ -1,32 +1,52 @@
 import numpy as np
 from copy import deepcopy
 
-
-# implements the detailed NFI mapping
+# ---------------------------------------------
+# Category - ID Mapping
+# ---------------------------------------------
+# Source: NFI woodland map 2018
+# 2 Categories: Woodland & Non Woodland
+# Woodland categories run from 1-16
+# Non Woodland categories run from 1-11,
+# but the number 2 precludes them to
+# differentiate them from woodland categories
+# ---------------------------------------------
+# TODO [low]: copy this dict into a new excel file to be parsed when needed
+#  (also include long category descriptors!)
 nfi_mapping = {
-    "Bare area": 1,
-    "Agriculture land": 2,
-    "Urban": 3,
-    "Grassland": 4,
-    "Quarry": 5,
-    "Road": 6,
-    "Other vegetation": 7,
-    "River": 8,
-    "Open water": 9,
-    "Windfarm": 10,
-    "Assumed woodland": 11,
-    "Broadleaved": 12,
-    "Conifer": 13,
-    "Felled": 14,
+    "Conifer": 1,                   # start of woodland categories
+    "Broadleaved": 2,
+    "Mixed mainly conifer": 3,
+    "Mixed mainly broadleaved": 4,
+    "Coppice with standards": 6,
+    "Shrub": 7,
+    "Young trees": 8,
+    "Felled": 9,
+    "Ground prep": 10,
+    "Low density": 13,
+    "Assumed woodland": 14,
     "Failed": 15,
-    "Ground prep": 16,
-    "Low density": 17,
-    "Mixed mainly broadleaved": 18,
-    "Mixed mainly conifer": 19,
-    "Young trees": 20,
-    "Coppice with standards": 21,
-    "Shrub": 22,
-    "Windblow": 23,
+    "Windblow": 16,
+    "Open water": 21,               # start of non-woodland categories
+    "Grassland": 22,
+    "Agriculture land": 23,
+    "Urban": 24,
+    "Road": 25,
+    "River": 26,
+    "Quarry": 28,
+    "Bare area": 29,
+    "Windfarm": 210,
+    "Other vegetation": 211
+}
+
+# TODO: shrub (7) in "Livestock Farming" OK?
+nfi_mapping_v2 = {
+    "Livestock Farming": [7, 13, 22, 23, 211],
+    "Native Forest": [2, 4, 6, 9],
+    "Commercial Forest": [1, 3, 8, 14, 15, 16],
+    "Water": [21, 26],
+    "Urban": [24, 25],
+    "Other": [28, 29, 210]
 }
 
 def invert_dict(d):
