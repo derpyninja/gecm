@@ -11,8 +11,9 @@ from copy import deepcopy
 # but the number 2 precludes them to
 # differentiate them from woodland categories
 # ---------------------------------------------
-# TODO [low]: copy this dict into a new excel file to be parsed when needed
+# TODO 1 [low]: copy this dict into a new excel file to be parsed when needed
 #  (also include long category descriptors!)
+# TODO 2 [low]: add np.nan to mapping as "outside of biosphere" or so
 nfi_mapping = {
     "Conifer": 1,                   # start of woodland categories
     "Broadleaved": 2,
@@ -39,15 +40,25 @@ nfi_mapping = {
     "Other vegetation": 211
 }
 
-# TODO: shrub (7) in "Livestock Farming" OK?
+# TODO 3: shrub (7) in "Livestock Farming" OK?
 nfi_mapping_v2 = {
-    "Livestock Farming": [7, 13, 22, 23, 211],
-    "Native Forest": [2, 4, 6, 9],
-    "Commercial Forest": [1, 3, 8, 14, 15, 16],
-    "Water": [21, 26],
-    "Urban": [24, 25],
-    "Other": [28, 29, 210]
+    1: [7, 13, 22, 23, 211],
+    2: [2, 4, 6, 9],
+    3: [1, 3, 8, 14, 15, 16],
+    4: [21, 26],
+    5: [24, 25],
+    6: [28, 29, 210]
 }
+
+id_mapping = {
+    "Livestock Farming": 1,
+    "Native Forest": 2,
+    "Commercial Forest": 3,
+    "Water": 4,
+    "Urban": 5,
+    "Other": 6
+}
+
 
 def invert_dict(d):
     """
@@ -99,3 +110,9 @@ def int2class(int_array, mapping=nfi_mapping, max_string_length=40):
     else:
         # currently does not work for np.ma
         return np.array([inverse_nfi_mapping[i] for i in int_array])
+
+if __name__ == "__main__":
+    print(invert_dict(nfi_mapping))
+    print(invert_dict(id_mapping))
+
+    print(nfi_mapping)

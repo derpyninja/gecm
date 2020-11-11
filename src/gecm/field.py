@@ -2,8 +2,13 @@ import os
 import numpy as np
 import rasterio as rio
 from rasterio.plot import show
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from src.gecm.dicts import int2class
+
+
+def cmap2hex(cm):
+    return [mpl.colors.rgb2hex(cm(i)[:3]) for i in range(cm.N)]
 
 
 class Map(object):
@@ -11,12 +16,21 @@ class Map(object):
     Implements playing field class.
     """
 
-    def __init__(self, fpath, mapping):
+    def __init__(self, fpath, mapping_detailed, mapping_simplifyer, cmap="Paired"):
         self.fpath = fpath
         self.src = rio.open(self.fpath)
         self.rows = self.src.width
         self.cols = self.src.height
-        self.mapping = mapping
+        self.mapping_detailed = mapping_detailed
+        self.mapping_simplifyer = mapping_simplifyer
+        self.cmap_str = cmap
+
+        # to be set later
+        self.field_detailed = None
+        self.field_simplified = None
+        self.n_colors = None
+        self.cmap = None
+        self.cmap_hex = None
 
     def read(self, masked=True):
         """
@@ -32,7 +46,15 @@ class Map(object):
         np.ma
             Parsed LULC map
         """
-        return self.src.read(1, masked=masked)
+        field_array = self.src.read(1, masked=masked)
+
+        # update
+        self.field_detailed = field_array
+        self.n_colors = len(np.unique(self.field_detailed)) - 1  # -1 for np.nan
+        self.cmap = plt.get_cmap(self.cmap_str, lut=self.n_colors)
+        self.cmap_hex = cmap2hex(self.cmap)
+
+        return field_array
 
     def convert(self):
         """
@@ -43,7 +65,10 @@ class Map(object):
         np.ma
             Masked array of LULC strings
         """
-        return int2class(self.read())
+        return int2class(self.field_detailed, mapping=self.mapping_detailed)
+
+    def simplify(self):
+        return
 
     def show(self):
         """
@@ -54,16 +79,15 @@ class Map(object):
         ax :
             matplotlib ax object
         """
-        # read
-        raster = self.read()
-
-        # plot
         fig, ax = plt.subplots()
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         ax.set_title("Map size: {} x {}".format(self.rows, self.cols))
 
-        show(raster, ax=ax, transform=self.src.transform, cmap="Paired")
+        show(
+            self.field_detailed, ax=ax, transform=self.src.transform,
+            cmap=self.cmap
+        )
         plt.tight_layout()
         return ax
 
@@ -81,13 +105,14 @@ class Map(object):
 
         # get unique value counts
         unique, counts = np.unique(raster, return_counts=True)
-
+        print(unique)
         # bar width as percent of total pixels ~ areal percentage
         bar_width = counts[:-1] / (self.rows * self.cols)
 
         # create barplot
         fig, ax = plt.subplots()
-        ax.barh(y=int2class(unique[:-1]), width=bar_width)
+        classes = int2class(int_array=unique[:-1], mapping=self.mapping_detailed)
+        ax.barh(y=classes, width=bar_width, color=self.cmap_hex)
         ax.set_xlabel("Percent of total area (%)")
         plt.tight_layout()
         return ax
@@ -103,11 +128,18 @@ if __name__ == "__main__":
 
     # load map
     fpath_map = os.path.join(data_processed, "NFI_rasterized_40_40.tif")
-    field = Map(fpath=fpath_map, mapping=nfi_mapping)
+    field = Map(
+        fpath=fpath_map,
+        mapping_detailed=nfi_mapping,
+        mapping_simplifyer=nfi_mapping_v2
+    )
 
-    # create plot
+    # simplify
+    field.read()
+    print(field.field_detailed)
+    print(field.simplify())
+
+    # plot
     field.show()
     field.show_barh()
-
-    # show plots
     plt.show()
