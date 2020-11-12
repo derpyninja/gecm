@@ -8,6 +8,18 @@ from src.gecm.dicts import int2class
 
 
 def cmap2hex(cm):
+    """
+    Extract color array from colormap object.
+
+    Parameters
+    ----------
+    cm : mpl.colormap
+
+    Returns
+    -------
+    list :
+        List of colors in HEX format.
+    """
     return [mpl.colors.rgb2hex(cm(i)[:3]) for i in range(cm.N)]
 
 
@@ -105,14 +117,19 @@ class Map(object):
 
         # get unique value counts
         unique, counts = np.unique(raster, return_counts=True)
-        print(unique)
+
         # bar width as percent of total pixels ~ areal percentage
-        bar_width = counts[:-1] / (self.rows * self.cols)
+        bar_width = np.array(counts[:-1] / (self.rows * self.cols))
+        non_biosphere_area = 1 - bar_width.sum()
 
         # create barplot
         fig, ax = plt.subplots()
         classes = int2class(int_array=unique[:-1], mapping=self.mapping_detailed)
         ax.barh(y=classes, width=bar_width, color=self.cmap_hex)
+        ax.set_title(
+            "Remaining, non-biosphere area: {:.2f} %".format(
+                non_biosphere_area * 100)
+        )
         ax.set_xlabel("Percent of total area (%)")
         plt.tight_layout()
         return ax
@@ -134,10 +151,12 @@ if __name__ == "__main__":
         mapping_simplifyer=nfi_mapping_v2
     )
 
-    # simplify
+    # read (!)
     field.read()
-    print(field.field_detailed)
-    print(field.simplify())
+
+    # simplify
+    #print(field.field_detailed)
+    #print(field.simplify())
 
     # plot
     field.show()

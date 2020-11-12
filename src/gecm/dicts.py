@@ -38,6 +38,7 @@ nfi_mapping = {
     "Bare area": 29,
     "Windfarm": 210,
     "Other vegetation": 211
+    # "Non-Biosphere Area": np.nan    # outside of our area of interest
 }
 
 # TODO 3: shrub (7) in "Livestock Farming" OK?
