@@ -127,7 +127,7 @@ class Map(object):
         classes = int2class(int_array=unique[:-1], mapping=self.mapping_detailed)
         ax.barh(y=classes, width=bar_width, color=self.cmap_hex)
         ax.set_title(
-            "Remaining, non-biosphere area: {:.2f} %".format(
+            "Non-biosphere area: {:.2f} %".format(
                 non_biosphere_area * 100)
         )
         ax.set_xlabel("Percent of total area (%)")
@@ -160,8 +160,3 @@ if __name__ == "__main__":
     # simplify
     #print(field.field_detailed)
     #print(field.simplify())
-
-    # plot
-    field.show()
-    field.show_barh()
-    plt.show()
