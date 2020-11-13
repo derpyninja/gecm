@@ -4,7 +4,7 @@ import rasterio as rio
 from rasterio.plot import show
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from src.gecm.dicts import int2class, remap_lulc_dict, nfi_mapping_simplified
+from src.gecm.dicts import int2class, remap_lulc_dict
 
 
 def cmap2hex(cm):
@@ -28,12 +28,22 @@ class Map(object):
     Implements playing field class.
     """
 
-    def __init__(self, fpath, mapping_detailed, cmap="Paired"):
+    def __init__(self, fpath, original_nfi_mapping, remap_dict, remap_dict_ids, cmap="Paired"):
         self.fpath = fpath
         self.src = rio.open(self.fpath)
         self.rows = self.src.width
         self.cols = self.src.height
-        self.mapping_detailed = mapping_detailed
+
+        self.original_nfi_mapping = original_nfi_mapping
+        self.remap_dict = remap_dict
+        self.remap_dict_ids = remap_dict_ids
+
+        self.simplified_nfi_mapping = remap_lulc_dict(
+            old_dict=self.original_nfi_mapping,
+            remap_dict=self.remap_dict,
+            remap_dict_ids=self.remap_dict_ids
+        )
+
         self.cmap_str = cmap
 
         # to be set later
@@ -61,22 +71,31 @@ class Map(object):
 
         # update
         self.field_detailed = field_array
+        #self.field_simplified = self.field_detailed.apply()
         self.n_colors = len(np.unique(self.field_detailed)) - 1  # -1 for np.nan
         self.cmap = plt.get_cmap(self.cmap_str, lut=self.n_colors)
         self.cmap_hex = cmap2hex(self.cmap)
 
         return field_array
 
+    def simplify(self):
+        """Simplify map based on remapping dict."""
+        pass
+
+    def update(self):
+        """Update map."""
+        pass
+
     def convert(self):
         """
-        Convert from integer to LULC representation.
+        Convert from integer to string representation.
 
         Returns
         -------
         np.ma
             Masked array of LULC strings
         """
-        return int2class(self.field_detailed, mapping=self.mapping_detailed)
+        return int2class(self.field_detailed, mapping=self.original_nfi_mapping)
 
     def show(self):
         """
@@ -92,11 +111,8 @@ class Map(object):
         ax.set_ylabel("y")
         ax.set_title("Map size: {} x {}".format(self.rows, self.cols))
 
-        # simplify
-        new_field = int2class(int_array=self.field_detailed, mapping=self.mapping_detailed)
-
         show(
-            new_field, ax=ax, transform=self.src.transform,
+            self.field_detailed, ax=ax, transform=self.src.transform,
             cmap=self.cmap
         )
         plt.tight_layout()
@@ -123,7 +139,7 @@ class Map(object):
 
         # create barplot
         fig, ax = plt.subplots()
-        classes = int2class(int_array=unique[:-1], mapping=self.mapping_detailed)
+        classes = int2class(int_array=unique[:-1], mapping=self.original_nfi_mapping)
         ax.barh(y=classes, width=bar_width, color=self.cmap_hex)
         ax.set_title(
             "Non-biosphere area: {:.2f} %".format(
@@ -135,7 +151,7 @@ class Map(object):
 
 
 if __name__ == "__main__":
-    from src.gecm.dicts import nfi_mapping, nfi_mapping_v2
+    from src.gecm.dicts import nfi_mapping, nfi_mapping_v2, id_mapping
 
     # define dirs
     data_raw = os.path.join("..", "..", "data", "raw")
@@ -149,15 +165,15 @@ if __name__ == "__main__":
     fpath_map = os.path.join(data_processed, "NFI_rasterized_{}_{}.tif".format(rows, cols))
     field = Map(
         fpath=fpath_map,
-        mapping_detailed=nfi_mapping_simplified,
+        original_nfi_mapping=nfi_mapping,
+        remap_dict=nfi_mapping_v2,
+        remap_dict_ids=id_mapping
     )
 
     # read (!)
     field.read()
 
-    # simplify
-    #print(field.field_detailed)
-    #print(field.simplify())
+    # TODO: simplify
 
     # plot
     field.show()
