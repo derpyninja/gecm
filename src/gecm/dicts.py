@@ -41,9 +41,12 @@ nfi_mapping = {
     "Grazing": 240    # defined by us
 }
 
+# Q&D
+nfi_mapping_simplified = {'Conifer': 3, 'Broadleaved': 2, 'Mixed mainly conifer': 3, 'Mixed mainly broadleaved': 2, 'Coppice with standards': 2, 'Shrub': 1, 'Young trees': 3, 'Felled': 2, 'Low density': 1, 'Assumed woodland': 3, 'Failed': 3, 'Windblow': 3, 'Open water': 4, 'Grassland': 1, 'Agriculture land': 1, 'Urban': 5, 'Road': 5, 'River': 4, 'Quarry': 6, 'Bare area': 6, 'Windfarm': 6, 'Other vegetation': 1, 'Grazing': 1}
+
 # TODO 3: shrub (7) in "Livestock Farming" OK?
 nfi_mapping_v2 = {
-    1: [7, 13, 22, 23, 211],
+    1: [7, 13, 22, 23, 211, 240],
     2: [2, 4, 6, 9],
     3: [1, 3, 8, 14, 15, 16],
     4: [21, 26],
@@ -88,6 +91,8 @@ def int2class(int_array, mapping=nfi_mapping, max_string_length=40):
         Describes mapping between ints and strings of LULC classes.
     int_array : np.array (int)
         2D Array representing a LULC map via integers
+    max_string_length : int
+        Int to str conversion needs a max str length param
 
     Returns
     -------
@@ -112,8 +117,41 @@ def int2class(int_array, mapping=nfi_mapping, max_string_length=40):
         # currently does not work for np.ma
         return np.array([inverse_nfi_mapping[i] for i in int_array])
 
-if __name__ == "__main__":
-    print(invert_dict(nfi_mapping))
-    print(invert_dict(id_mapping))
 
-    print(nfi_mapping)
+def remap_lulc_dict(old_dict, remap_dict, remap_dict_ids, res_dict=None):
+
+    # define placeholder dict
+    res_dict = res_dict or {}
+
+    # invert id dict
+    remap_dict_ids_inv = invert_dict(remap_dict_ids)
+
+    # iterate over items of original mapping
+    for old_lulc_name, old_lulc_code in old_dict.items():
+        print(old_lulc_name, old_lulc_code)
+
+        # iterate over items of remapping dict. Each row takes the following
+        # form: {'newkey1': [oldvalue1, oldvalue2, ...], ...}
+        for new_lulc_code, old_lulc_codes in remap_dict.items():
+            new_lulc_name = remap_dict_ids_inv[new_lulc_code]
+            print(new_lulc_name, old_lulc_codes)
+
+            if old_lulc_code in old_lulc_codes:
+                res_dict[old_lulc_name] = new_lulc_code
+
+    return res_dict
+
+
+if __name__ == "__main__":
+
+    nfi_remapped = remap_lulc_dict(
+        old_dict=nfi_mapping,
+        remap_dict=nfi_mapping_v2,
+        remap_dict_ids=id_mapping
+    )
+
+    print(nfi_remapped)
+
+
+
+

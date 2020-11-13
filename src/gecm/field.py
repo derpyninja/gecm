@@ -4,7 +4,7 @@ import rasterio as rio
 from rasterio.plot import show
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from src.gecm.dicts import int2class
+from src.gecm.dicts import int2class, remap_lulc_dict, nfi_mapping_simplified
 
 
 def cmap2hex(cm):
@@ -28,13 +28,12 @@ class Map(object):
     Implements playing field class.
     """
 
-    def __init__(self, fpath, mapping_detailed, mapping_simplifyer, cmap="Paired"):
+    def __init__(self, fpath, mapping_detailed, cmap="Paired"):
         self.fpath = fpath
         self.src = rio.open(self.fpath)
         self.rows = self.src.width
         self.cols = self.src.height
         self.mapping_detailed = mapping_detailed
-        self.mapping_simplifyer = mapping_simplifyer
         self.cmap_str = cmap
 
         # to be set later
@@ -79,9 +78,6 @@ class Map(object):
         """
         return int2class(self.field_detailed, mapping=self.mapping_detailed)
 
-    def simplify(self):
-        return
-
     def show(self):
         """
         Create a spatial plot of the map.
@@ -96,8 +92,11 @@ class Map(object):
         ax.set_ylabel("y")
         ax.set_title("Map size: {} x {}".format(self.rows, self.cols))
 
+        # simplify
+        new_field = int2class(int_array=self.field_detailed, mapping=self.mapping_detailed)
+
         show(
-            self.field_detailed, ax=ax, transform=self.src.transform,
+            new_field, ax=ax, transform=self.src.transform,
             cmap=self.cmap
         )
         plt.tight_layout()
@@ -150,8 +149,7 @@ if __name__ == "__main__":
     fpath_map = os.path.join(data_processed, "NFI_rasterized_{}_{}.tif".format(rows, cols))
     field = Map(
         fpath=fpath_map,
-        mapping_detailed=nfi_mapping,
-        mapping_simplifyer=nfi_mapping_v2
+        mapping_detailed=nfi_mapping_simplified,
     )
 
     # read (!)
@@ -160,3 +158,8 @@ if __name__ == "__main__":
     # simplify
     #print(field.field_detailed)
     #print(field.simplify())
+
+    # plot
+    field.show()
+    field.show_barh()
+    plt.show()
