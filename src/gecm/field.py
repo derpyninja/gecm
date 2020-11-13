@@ -176,6 +176,6 @@ if __name__ == "__main__":
     # TODO: simplify
 
     # plot
-    field.show()
-    field.show_barh()
-    plt.show()
+    #field.show()
+    #field.show_barh()
+    #plt.show()
