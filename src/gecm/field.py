@@ -143,8 +143,11 @@ if __name__ == "__main__":
     data_processed = os.path.join("..", "..", "data", "processed")
     figure_dir = os.path.join("..", "..", "plots")
 
+    # size
+    rows = cols = 90
+
     # load map
-    fpath_map = os.path.join(data_processed, "NFI_rasterized_40_40.tif")
+    fpath_map = os.path.join(data_processed, "NFI_rasterized_{}_{}.tif".format(rows, cols))
     field = Map(
         fpath=fpath_map,
         mapping_detailed=nfi_mapping,
