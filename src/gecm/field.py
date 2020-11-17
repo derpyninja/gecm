@@ -288,7 +288,6 @@ if __name__ == "__main__":
         data_processed, "NFI_rasterized_{}_{}.tif".format(rows, cols)
     )
 
-
     # define cmap
     simplified_lulc_cm = ListedColormap(
         [
