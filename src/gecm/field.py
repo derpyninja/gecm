@@ -1,13 +1,14 @@
 import os
 import numpy as np
 import rasterio as rio
-from rasterio.plot import show
+import rasterio.plot as rioplot
 import matplotlib.pyplot as plt
-from src.gecm.functions import (
+
+from src.gecm.vis import cmap2hex
+from src.gecm.base import (
     invert_dict,
     convert_lulc_id_to_class,
     remap_lulc_dict,
-    cmap2hex,
     remap_array_with_dict,
 )
 
@@ -84,10 +85,8 @@ class Map(object):
         if granularity == 1:
             self._simplify_lulc_data()
 
-        print(self.cmap)
         # self._create_cmap(granularity=granularity)
         self.cmap_hex = cmap2hex(self.cmap)
-        print(self.cmap_hex)
 
     def _read_lulc_data(self, masked=True):
         """
@@ -220,9 +219,51 @@ class Map(object):
         fig, ax = plt.subplots()
         ax.set_xlabel("x")
         ax.set_ylabel("y")
-        ax.set_title("Map size: {} x {}".format(self.rows, self.cols))
-        print(self.cmap)
-        show(raster, ax=ax, transform=self.src.transform, cmap=self.cmap)
+
+        title = "Map size: {} x {}".format(self.rows, self.cols)
+
+        # show
+        rioplot.show(
+            raster,
+            ax=ax,
+            transform=self.src.transform,
+            cmap=self.cmap,
+            title=title,
+            contour=False,
+        )
+
+        # TODO: improve grid based on np.block plots
+        # set axis limits
+        ax.set_ylim(530000, 630000)
+        ax.set_xlim(200000, 300000)
+
+        # grid params
+        n_lines = 4
+        spacing = 20000
+        lowest_line = 550000
+        leftest_line = 220000
+
+        # define grid properties
+        grid_line_style = "--"
+        grid_line_width = 1
+        grid_line_color = "grey"
+
+        # build grid
+        for step in np.arange(0, n_lines):
+            plt.axhline(
+                y=lowest_line + spacing * step,
+                linestyle=grid_line_style,
+                linewidth=grid_line_width,
+                color=grid_line_color,
+            )
+            plt.axvline(
+                x=leftest_line + spacing * step,
+                linestyle=grid_line_style,
+                linewidth=grid_line_width,
+                color=grid_line_color,
+            )
+
+        # layout
         plt.tight_layout()
         return ax
 
@@ -253,7 +294,7 @@ class Map(object):
         classes = convert_lulc_id_to_class(
             int_array=unique[:-1], mapping=self.simplified_lulc_mapping
         )
-        print(self.cmap_hex)
+
         ax.bar(x=classes, height=bar_width, color=self.cmap_hex)
         # ax.set_title(
         #    "Non-biosphere area: {:.2f} %".format(non_biosphere_area * 100)
@@ -281,7 +322,7 @@ if __name__ == "__main__":
     figure_dir = os.path.join(project_dir, "plots")
 
     # playing field size
-    rows = cols = 90
+    rows = cols = 80
 
     # set path to raster data
     fpath_map = os.path.join(
@@ -305,12 +346,15 @@ if __name__ == "__main__":
         cmap=simplified_lulc_cm,
     )
 
+    # specify granularity
+    granularity = 1
+
     # initialise: this step is crucial, else nothing works!
-    field.initialise(granularity=1)
+    field.initialise(granularity=granularity)
 
     # plot
-    field.show(granularity=1)
-    field.show_bar(granularity=1)
+    field.show(granularity=granularity)
+    # field.show_bar(granularity=granularity)
 
     # show
     plt.show()
