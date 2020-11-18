@@ -18,7 +18,15 @@ def cmap2hex(cm):
     return [mpl.colors.rgb2hex(cm(i)[:3]) for i in range(cm.N)]
 
 
-def show_mgmt_decisions(df, current_round=None, cols=None, kind='bar', stacked=True, box_width_scaling=0.7, figure_size=(10, 8)):
+def show_mgmt_decisions(
+    df,
+    current_round=None,
+    cols=None,
+    kind="bar",
+    stacked=True,
+    box_width_scaling=0.7,
+    figure_size=(10, 8),
+):
     # based on https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
 
     # allow subsets
@@ -32,7 +40,7 @@ def show_mgmt_decisions(df, current_round=None, cols=None, kind='bar', stacked=T
     # Shrink current axis & put a legend to the right of the current axis
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * box_width_scaling, box.height])
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
 
     # labels
     ax.set_ylabel("Management decisions (%)")

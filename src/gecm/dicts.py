@@ -59,5 +59,5 @@ simplified_lulc_mapping_colors = {
     1: "#fee090",
     2: "#33a02c",
     3: "#b2df8a",
-    #4: "#fdbf6f"
+    # 4: "#fdbf6f"
 }

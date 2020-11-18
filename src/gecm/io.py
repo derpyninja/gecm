@@ -96,7 +96,9 @@ def gsheet2df(gsheet, header=0, stop=None):
         return pd.concat(all_data, axis=1)
 
 
-def parse_mgmt_decisions(spreadsheet_id, sheets, credentials_fpath, scopes, unstack_data=True):
+def parse_mgmt_decisions(
+    spreadsheet_id, sheets, credentials_fpath, scopes, unstack_data=True
+):
     # TODO [mid]: create a separate class for all the mgmt decisions stuff, including gdrive connection
     sheet_dict = {}
 
@@ -109,7 +111,7 @@ def parse_mgmt_decisions(spreadsheet_id, sheets, credentials_fpath, scopes, unst
             credentials=credentials_fpath,
             spreadsheet_id=spreadsheet_id,
             range_name=sheet_name,
-            scopes=scopes
+            scopes=scopes,
         )
 
         # 2) convert to data frame
@@ -119,8 +121,9 @@ def parse_mgmt_decisions(spreadsheet_id, sheets, credentials_fpath, scopes, unst
         # 3) convert to numeric
         df = df_raw.copy()
         for col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce",
-                                    downcast="integer")
+            df[col] = pd.to_numeric(
+                df[col], errors="coerce", downcast="integer"
+            )
 
         # 4) append to dict
         sheet_dict[sheet_name] = df
@@ -129,8 +132,9 @@ def parse_mgmt_decisions(spreadsheet_id, sheets, credentials_fpath, scopes, unst
     df_all = pd.concat(sheet_dict.values(), keys=sheet_dict.keys())
     df_all.index = df_all.index.set_names(["player", "round"])
     df_all = df_all.reset_index()
-    df_all["round"] = pd.to_numeric(df_all["round"], errors="coerce",
-                                    downcast="integer")
+    df_all["round"] = pd.to_numeric(
+        df_all["round"], errors="coerce", downcast="integer"
+    )
 
     # Unstack data: based on
     # https://stackoverflow.com/questions/25386870/pandas-plotting-with-multi-index
