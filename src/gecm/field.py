@@ -331,7 +331,7 @@ class Map(object):
         plt.tight_layout()
         return ax
 
-    def show_bar(self, granularity=1, figure_size=None):
+    def show_bar(self, granularity=1, relative=False, figure_size=None):
         """
         Create a barplot of the current distribution of areal
         percentage for all LULC types.
@@ -350,7 +350,11 @@ class Map(object):
         unique, counts = np.unique(raster, return_counts=True)
 
         # bar width as percent of total pixels ~ areal percentage
-        bar_width = np.array(counts[:-1] / (self.rows * self.cols))
+        if relative:
+            bar_width = np.array(counts[:-1] / (self.rows * self.cols))
+        else:
+            bar_width = np.array(counts[:-1])
+
         non_biosphere_area = 1 - bar_width.sum()
 
         # create barplot

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from src.gecm.dicts import simplified_lulc_mapping
 
 
@@ -36,7 +37,11 @@ def create_dummy_matrix():
         ),
     )
 
-    return dummy_playing_field_matrix, plot_definition_matrix
+    return (
+        dummy_playing_field_matrix,
+        plot_definition_matrix,
+        large_plot_definition_matrix,
+    )
 
 
 # assumes four players only / if the four corner player say yes then it's true.
@@ -64,7 +69,7 @@ def teamwork(cooperation_matrix):
 
 
 # get the total yield for the current map
-def yield_map(field):
+def calculate_yield(field, lulc_mapping, relative=True):
     """
 
     Args:
@@ -76,19 +81,21 @@ def yield_map(field):
             the keys 'Cattle Farming', 'Sheep Farming', 'Native Forest' and 'Commercial Forest' respectively.
 
     """
-    tot_cattle = np.count_nonzero(
-        field == simplified_lulc_mapping["Cattle Farming"]
-    )
-    tot_sheep = np.count_nonzero(
-        field == simplified_lulc_mapping["Sheep Farming"]
-    )
-    tot_n_forest = np.count_nonzero(
-        field == simplified_lulc_mapping["Native Forest"]
-    )
-    tot_c_forest = np.count_nonzero(
-        field == simplified_lulc_mapping["Commercial Forest"]
-    )
-    return tot_cattle, tot_sheep, tot_n_forest, tot_c_forest
+    yield_dict = {}
+    n_pixels = np.count_nonzero(field.flatten())
+
+    for lulc_class, lulc_id in lulc_mapping.items():
+
+        # calc yield per class
+        class_yield = np.count_nonzero(field == lulc_mapping[lulc_class])
+
+        # append
+        yield_dict[lulc_id] = (
+            class_yield / n_pixels if relative else class_yield
+        )
+
+    # TODO: assert check on percentages
+    return yield_dict
 
 
 def crop_field(field):
@@ -424,3 +431,32 @@ def money_pp_forester(
         money = m_area + m_change + m_tourism + m_teamwork + brexit
 
     return money
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    # create dummy data
+    (
+        dummy_playing_field_matrix,
+        plot_definition_matrix,
+        large_plot_definition_matrix,
+    ) = create_dummy_matrix()
+    dummy_playing_field_matrix = np.random.randint(
+        1, 4, dummy_playing_field_matrix.shape, np.int8
+    )
+
+    # plot dummy data
+    plt.imshow(dummy_playing_field_matrix)
+
+    # yield_map --> WORKS
+    tot_cattle, tot_sheep, tot_n_forest, tot_c_forest = calculate_yield(
+        dummy_playing_field_matrix
+    )
+    print(tot_cattle, tot_sheep, tot_n_forest, tot_c_forest)
+
+    # crop_field --> WORKS
+    m1, m2, m3, m4 = crop_field(dummy_playing_field_matrix)
+    print(m1.shape, m2.shape, m3.shape, m4.shape)
+
+    # plt.show()
