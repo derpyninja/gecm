@@ -219,7 +219,7 @@ class Map(object):
         # TODO
         pass
 
-    def show(self, granularity=0):
+    def show(self, granularity=1, figure_size=None):
         """
         Create a spatial plot of the map.
 
@@ -234,7 +234,7 @@ class Map(object):
         )
 
         # create figure
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=figure_size)
         # ax.set_xlabel("x")
         # ax.set_ylabel("y")
 
@@ -331,7 +331,7 @@ class Map(object):
         plt.tight_layout()
         return ax
 
-    def show_bar(self, granularity=0):
+    def show_bar(self, granularity=1, figure_size=None):
         """
         Create a barplot of the current distribution of areal
         percentage for all LULC types.
@@ -354,7 +354,7 @@ class Map(object):
         non_biosphere_area = 1 - bar_width.sum()
 
         # create barplot
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=figure_size)
         classes = convert_lulc_id_to_class(
             int_array=unique[:-1], mapping=self.simplified_lulc_mapping
         )
@@ -419,11 +419,14 @@ if __name__ == "__main__":
 
     # plot
     field.show(granularity=granularity)
-    # field.show_bar(granularity=
+    field.show_bar(granularity=granularity)
 
     # update round
     field.update_round()
-    print(field.current_round)
+
+    # some changes
+
+    # plot new map (and potentially also the changes)
 
     # show
     plt.show()

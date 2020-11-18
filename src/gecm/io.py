@@ -94,3 +94,49 @@ def gsheet2df(gsheet, header=0, stop=None):
             ds = pd.Series(data=column_data, name=col_name)
             all_data.append(ds)
         return pd.concat(all_data, axis=1)
+
+
+def parse_mgmt_decisions(spreadsheet_id, sheets, credentials_fpath, scopes, unstack_data=True):
+    # TODO [mid]: create a separate class for all the mgmt decisions stuff, including gdrive connection
+    sheet_dict = {}
+
+    # fetch data via gdrive api
+    for i, sheet_name in enumerate(sheets):
+        print(sheet_name)
+
+        # 1) fetch data
+        data_dict = get_google_sheet(
+            credentials=credentials_fpath,
+            spreadsheet_id=spreadsheet_id,
+            range_name=sheet_name,
+            scopes=scopes
+        )
+
+        # 2) convert to data frame
+        df_raw = gsheet2df(data_dict, header=0, stop=11)
+        df_raw = df_raw.set_index("Round")
+
+        # 3) convert to numeric
+        df = df_raw.copy()
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce",
+                                    downcast="integer")
+
+        # 4) append to dict
+        sheet_dict[sheet_name] = df
+
+    # Concatenate and tidy management decisions
+    df_all = pd.concat(sheet_dict.values(), keys=sheet_dict.keys())
+    df_all.index = df_all.index.set_names(["player", "round"])
+    df_all = df_all.reset_index()
+    df_all["round"] = pd.to_numeric(df_all["round"], errors="coerce",
+                                    downcast="integer")
+
+    # Unstack data: based on
+    # https://stackoverflow.com/questions/25386870/pandas-plotting-with-multi-index
+    df_final = df_all.set_index(["round", "player"]).sort_index()
+
+    if unstack_data:
+        return df_final.unstack(level="player")
+    else:
+        return df_final
