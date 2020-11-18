@@ -2,6 +2,7 @@ import os
 import numpy as np
 import rasterio as rio
 import rasterio.plot as rioplot
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from src.gecm.vis import cmap2hex
@@ -41,8 +42,13 @@ class Map(object):
         """
         self.fpath = fpath
 
-        # rasterio src
+        # initialise the first round of the game
+        self.current_round = 1
+        self.rounds_played = [self.current_round]
+
+        # rasterio
         self.src = rio.open(self.fpath)
+        self.bbox = self.src.bounds
 
         # image dimensions
         self.rows = self.src.width
@@ -87,6 +93,18 @@ class Map(object):
 
         # self._create_cmap(granularity=granularity)
         self.cmap_hex = cmap2hex(self.cmap)
+
+    def get_rounds(self, current=True):
+        round_idx = self.current_round - 1
+
+        if current:
+            return self.rounds_played[round_idx]
+        else:
+            return self.rounds_played
+
+    def update_round(self):
+        self.current_round += 1
+        self.rounds_played.append(self.current_round)
 
     def _read_lulc_data(self, masked=True):
         """
@@ -220,7 +238,8 @@ class Map(object):
         # ax.set_xlabel("x")
         # ax.set_ylabel("y")
 
-        title = "Map size: {} x {}".format(self.rows, self.cols)
+        # create title
+        title = "Round {}".format(self.get_rounds(current=True))
 
         # show
         rioplot.show(
@@ -235,35 +254,78 @@ class Map(object):
         # TODO [high]: manually create x- and y-ticks + ticklabels (11 ... 44)
         # TODO [high]: auto-create grid based on np.block structure
 
+        # obtain limits
+        lower_left_x, lower_left_y, upper_right_x, upper_right_y = self.bbox
+
+        # calculate total distance covered in x and y directions
+        x_distance = upper_right_x - lower_left_x
+        y_distance = upper_right_y - lower_left_y
+
+        # get maximum of both directions and round through ceiling
+        max_distance_ceiled = np.around(
+            np.max([x_distance, y_distance]), decimals=-2
+        )
+
         # set axis limits
-        ax.set_ylim(530000, 630000)
-        ax.set_xlim(200000, 300000)
+        ax.set_ylim(lower_left_y, upper_right_y)
+        ax.set_xlim(lower_left_x, upper_right_x)
 
         # grid params
-        n_lines = 4
-        spacing = 20000
-        lowest_line = 550000
-        leftest_line = 220000
+        n_gridlines = 4
+        spacing = max_distance_ceiled / n_gridlines
+        lowest_line = lower_left_y + spacing
+        leftest_line = lower_left_x + spacing
 
         # define grid properties
         grid_line_style = "--"
         grid_line_width = 1
         grid_line_color = "grey"
 
+        # init containers for ticks and tick-labels
+        # TODO: shift all labels to be in the middle of the ticks (by +50%)
+        x_ticks = []
+        y_ticks = []
+        x_tick_labels = np.arange(1, n_gridlines + 1, 1)
+        y_tick_labels = np.arange(1, n_gridlines + 1, 1)
+
         # build grid
-        for step in np.arange(0, n_lines):
+        for step in np.arange(0, n_gridlines):
+
+            # calc and append y steps
+            y_step = lowest_line + spacing * step
+            y_ticks.append(y_step)
+
+            # calc and append x steps
+            x_step = leftest_line + spacing * step
+            x_ticks.append(x_step)
+
+            # draw y grid lines
             plt.axhline(
-                y=lowest_line + spacing * step,
+                y=y_step,
                 linestyle=grid_line_style,
                 linewidth=grid_line_width,
                 color=grid_line_color,
             )
+
+            # draw x grid lines
             plt.axvline(
-                x=leftest_line + spacing * step,
+                x=x_step,
                 linestyle=grid_line_style,
                 linewidth=grid_line_width,
                 color=grid_line_color,
             )
+
+        # shift ticks to midpoints of blocks
+        x_ticks_shifted = np.array(x_ticks) - (spacing * 0.5)
+        y_ticks_shifted = np.array(y_ticks) - (spacing * 0.5)
+
+        # set ticks
+        ax.set_xticks(ticks=x_ticks_shifted, minor=False)
+        ax.set_yticks(ticks=y_ticks_shifted, minor=False)
+
+        # set tick labels
+        ax.set_xticklabels(labels=x_tick_labels, minor=False)
+        ax.set_yticklabels(labels=y_tick_labels[::-1], minor=False)
 
         # layout
         plt.tight_layout()
@@ -353,10 +415,15 @@ if __name__ == "__main__":
 
     # initialise: this step is crucial, else nothing works!
     field.initialise(granularity=granularity)
+    print(field.current_round)
 
     # plot
     field.show(granularity=granularity)
-    # field.show_bar(granularity=granularity)
+    # field.show_bar(granularity=
+
+    # update round
+    field.update_round()
+    print(field.current_round)
 
     # show
     plt.show()
