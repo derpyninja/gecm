@@ -217,8 +217,8 @@ class Map(object):
 
         # create figure
         fig, ax = plt.subplots()
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
+        # ax.set_xlabel("x")
+        # ax.set_ylabel("y")
 
         title = "Map size: {} x {}".format(self.rows, self.cols)
 
@@ -232,7 +232,9 @@ class Map(object):
             contour=False,
         )
 
-        # TODO: improve grid based on np.block plots
+        # TODO [high]: manually create x- and y-ticks + ticklabels (11 ... 44)
+        # TODO [high]: auto-create grid based on np.block structure
+
         # set axis limits
         ax.set_ylim(530000, 630000)
         ax.set_xlim(200000, 300000)
