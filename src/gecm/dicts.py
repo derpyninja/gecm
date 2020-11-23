@@ -41,9 +41,10 @@ original_lulc_mapping = {
 
 # describes the simplified LULC types
 simplified_lulc_mapping = {
-    "Livestock Farming": 1,
+    "Sheep Farming": 1,
     "Native Forest": 2,
     "Commercial Forest": 3,
+    "Cattle Farming": 4,
 }
 
 # describes the relationship between the simplified & original LULC identifiers
@@ -53,5 +54,10 @@ lulc_remapping = {
     3: [1, 3, 8, 10, 14, 15, 16],
 }
 
-# colormap from https://colorbrewer2.org/#type=qualitative&scheme=Paired&n=5
-simplified_lulc_mapping_colors = {1: "#fee090", 2: "#33a02c", 3: "#b2df8a"}
+# colormap source: https://colorbrewer2.org/#type=qualitative&scheme=Paired&n=5
+simplified_lulc_mapping_colors = {
+    1: "#fee090",
+    2: "#33a02c",
+    3: "#b2df8a",
+    #4: "#fdbf6f"
+}

@@ -13,19 +13,19 @@ import numpy as np
 def roles(players):
     if players == 3:
         print(
-            "There are 3 roles for each player, the Farmer, the Forester and a Business cartel. Please distribute each role among yourselves"
+            "There are 3 roles for each player, the Farmer, the Forester and a Tourism association. Please distribute each role among yourselves"
         )
     if players == 4:
         print(
-            "There are 4 roles for each player, Farmer 1 and 2, a Forester and a Business cartel. Please distribute each role among yourselves"
+            "There are 4 roles for each player, Farmer 1 and 2, a Forester and a Tourism association. Please distribute each role among yourselves"
         )
     if players == 5:
         print(
-            "There are 5 roles for each player, Farmer 1 and 2, Forester 1 and 2 and a Business cartel. Please distribute each role among yourselves"
+            "There are 5 roles for each player, Farmer 1 and 2, Forester 1 and 2 and a Tourism association (SSDA). Please distribute each role among yourselves"
         )
     if players == 6:
         print(
-            "There are 6 roles for each player, Farmer 1 and 2, Forester 1 and 2 and Business representatives 1 and 2. Please distribute each role among yourselves"
+            "There are 6 roles for each player, Farmer 1 and 2, Forester 1 and 2 and Tourism association (SSDA) representatives 1 and 2. Please distribute each role among yourselves"
         )
     else:
         print(
