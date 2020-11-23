@@ -1,6 +1,15 @@
 import numpy as np
 import pandas as pd
-from src.gecm.dicts import simplified_lulc_mapping
+
+
+class ConceptualModel(object):
+    """
+    Implements the conceptual model class of the game.
+    """
+
+    def __init__(self, model_parameters, model_calculations):
+        self.model_parameters = model_parameters
+        self.model_calculations = model_calculations
 
 
 def create_dummy_matrix():
@@ -460,3 +469,6 @@ if __name__ == "__main__":
     print(m1.shape, m2.shape, m3.shape, m4.shape)
 
     # plt.show()
+
+if __name__ == "__main__":
+    pass

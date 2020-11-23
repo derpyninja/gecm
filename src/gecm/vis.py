@@ -51,3 +51,7 @@ def show_mgmt_decisions(
     ax.set_ylim(-100, 100)
 
     return ax
+
+
+if __name__ == "__main__":
+    pass

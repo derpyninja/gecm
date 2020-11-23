@@ -144,3 +144,42 @@ def parse_mgmt_decisions(
         return df_final.unstack(level="player")
     else:
         return df_final
+
+
+def parse_sheets(spreadsheet_id, sheets, credentials_fpath, scopes, to_numeric=False, errors="ignore", downcast="integer"):
+
+    sheet_dict = {}
+
+    # fetch data via gdrive api
+    for i, sheet_name in enumerate(sheets):
+        print(sheet_name)
+
+        # 1) fetch data
+        data_dict = get_google_sheet(
+            credentials=credentials_fpath,
+            spreadsheet_id=spreadsheet_id,
+            range_name=sheet_name,
+            scopes=scopes,
+        )
+
+        # 2) convert to data frame
+        df_raw = gsheet2df(data_dict, header=0)
+
+        # 3) convert to numeric
+        if to_numeric:
+            df = df_raw.copy()
+            for col in df.columns:
+                df[col] = pd.to_numeric(
+                    df[col], errors=errors, downcast=downcast
+                )
+        else:
+            df = df_raw
+
+        # 4) append to dict
+        sheet_dict[sheet_name] = df
+
+    return sheet_dict
+
+
+if __name__ == "__main__":
+    pass
