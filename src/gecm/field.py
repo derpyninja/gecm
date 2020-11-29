@@ -43,6 +43,7 @@ class Map(object):
         self.fpath = fpath
 
         # initialise the first round of the game
+        # TODO: change to start with 0
         self.current_round = 1
         self.rounds_played = [self.current_round]
 
@@ -390,7 +391,7 @@ if __name__ == "__main__":
     figure_dir = os.path.join(project_dir, "plots")
 
     # playing field size
-    rows = cols = 80
+    rows = cols = 40
 
     # set path to raster data
     fpath_map = os.path.join(
@@ -422,13 +423,14 @@ if __name__ == "__main__":
     print(field.current_round)
 
     # plot
-    field.show(granularity=granularity)
-    field.show_bar(granularity=granularity)
+    #field.show(granularity=granularity)
+    #field.show_bar(granularity=granularity)
 
     # update round
     field.update_round()
 
     # some changes
+    print(field.map_simplified.shape)
 
     # plot new map (and potentially also the changes)
 

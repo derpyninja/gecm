@@ -11,6 +11,9 @@ class ConceptualModel(object):
         self.model_parameters = model_parameters
         self.model_calculations = model_calculations
 
+        # bank accounts
+        self.bank_account_farmers1 = {}
+        self.bank_account_farmers2 = {}
 
 def create_dummy_matrix():
     """
@@ -459,16 +462,11 @@ if __name__ == "__main__":
     plt.imshow(dummy_playing_field_matrix)
 
     # yield_map --> WORKS
-    tot_cattle, tot_sheep, tot_n_forest, tot_c_forest = calculate_yield(
-        dummy_playing_field_matrix
-    )
-    print(tot_cattle, tot_sheep, tot_n_forest, tot_c_forest)
+    #tot_cattle, tot_sheep, tot_n_forest, tot_c_forest = calculate_yield(
+    #    dummy_playing_field_matrix
+    #)
+    #print(tot_cattle, tot_sheep, tot_n_forest, tot_c_forest)
 
     # crop_field --> WORKS
     m1, m2, m3, m4 = crop_field(dummy_playing_field_matrix)
     print(m1.shape, m2.shape, m3.shape, m4.shape)
-
-    # plt.show()
-
-if __name__ == "__main__":
-    pass
