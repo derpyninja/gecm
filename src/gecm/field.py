@@ -2,7 +2,7 @@ import os
 import numpy as np
 import rasterio as rio
 import rasterio.plot as rioplot
-import matplotlib as mpl
+from matplotlib.gridspec import GridSpec
 import matplotlib.pyplot as plt
 
 from src.gecm.vis import cmap2hex
@@ -42,22 +42,20 @@ class Map(object):
         """
         self.fpath = fpath
 
-        # initialise the first round of the game
-        # TODO: change to start with 0
-        self.current_round = 1
+        # initialise the zeroth' round of the game
+        self.current_round = 0
         self.rounds_played = [self.current_round]
 
-        # rasterio
+        # parse rasterio data & metadata
         self.src = rio.open(self.fpath)
         self.bbox = self.src.bounds
-
-        # image dimensions
         self.rows = self.src.width
         self.cols = self.src.height
 
-        # map raster data
+        # raster data describing the map
         self.map_original = None
         self.map_simplified = None
+        self.map_simplified_container = {}
 
         # LULC mappings
         self.original_lulc_mapping = original_lulc_mapping
@@ -88,22 +86,43 @@ class Map(object):
         """
         self._read_lulc_data(masked=masked)
 
-        # simplify
         if granularity == 1:
+            # simplify and store
             self._simplify_lulc_data()
+
+            # append to empty container storing simplified maps of all rounds
+            self.map_simplified_container[
+                "round_{}".format(self.current_round)
+            ] = self.map_simplified
 
         # self._create_cmap(granularity=granularity)
         self.cmap_hex = cmap2hex(self.cmap)
 
     def get_rounds(self, current=True):
-        round_idx = self.current_round - 1
+        """
+
+        Parameters
+        ----------
+        current
+
+        Returns
+        -------
+
+        """
+        round_idx = self.current_round
 
         if current:
             return self.rounds_played[round_idx]
         else:
             return self.rounds_played
 
-    def update_round(self):
+    def update_round_number(self):
+        """
+
+        Returns
+        -------
+
+        """
         self.current_round += 1
         self.rounds_played.append(self.current_round)
 
@@ -122,7 +141,6 @@ class Map(object):
             Parsed LULC map
         """
         self.map_original = self.src.read(1, masked=masked)
-        return None
 
     def _simplify_lulc_data(self):
         """
@@ -154,7 +172,6 @@ class Map(object):
         self.map_simplified = remap_array_with_dict(
             input_array=self.map_original, mapping=self.remapping_dict
         )
-        return None
 
     def _get_lulc_data_by_granularity(self, granularity=0):
         """
@@ -220,7 +237,7 @@ class Map(object):
         # TODO
         pass
 
-    def show(self, granularity=1, figure_size=None):
+    def show(self, granularity=1, figure_size=None, ax=None):
         """
         Create a spatial plot of the map.
 
@@ -235,12 +252,8 @@ class Map(object):
         )
 
         # create figure
-        fig, ax = plt.subplots(figsize=figure_size)
-        # ax.set_xlabel("x")
-        # ax.set_ylabel("y")
-
-        # create title
-        title = "Round {}".format(self.get_rounds(current=True))
+        if ax is None:
+            _, ax = plt.subplots(figsize=figure_size)
 
         # show
         rioplot.show(
@@ -248,12 +261,8 @@ class Map(object):
             ax=ax,
             transform=self.src.transform,
             cmap=self.cmap,
-            title=title,
             contour=False,
         )
-
-        # TODO [high]: manually create x- and y-ticks + ticklabels (11 ... 44)
-        # TODO [high]: auto-create grid based on np.block structure
 
         # obtain limits
         lower_left_x, lower_left_y, upper_right_x, upper_right_y = self.bbox
@@ -279,19 +288,20 @@ class Map(object):
 
         # define grid properties
         grid_line_style = "--"
-        grid_line_width = 1
+        grid_line_style_quadrants = "-"
+        grid_line_width = 1.5
+        grid_line_width_quadrants = 2
         grid_line_color = "grey"
+        grid_line_color_quadrants = "black"
 
         # init containers for ticks and tick-labels
-        # TODO: shift all labels to be in the middle of the ticks (by +50%)
         x_ticks = []
         y_ticks = []
         x_tick_labels = np.arange(1, n_gridlines + 1, 1)
         y_tick_labels = np.arange(1, n_gridlines + 1, 1)
 
         # build grid
-        for step in np.arange(0, n_gridlines):
-
+        for i, step in enumerate(np.arange(0, n_gridlines)):
             # calc and append y steps
             y_step = lowest_line + spacing * step
             y_ticks.append(y_step)
@@ -301,7 +311,7 @@ class Map(object):
             x_ticks.append(x_step)
 
             # draw y grid lines
-            plt.axhline(
+            ax.axhline(
                 y=y_step,
                 linestyle=grid_line_style,
                 linewidth=grid_line_width,
@@ -309,12 +319,30 @@ class Map(object):
             )
 
             # draw x grid lines
-            plt.axvline(
+            ax.axvline(
                 x=x_step,
                 linestyle=grid_line_style,
                 linewidth=grid_line_width,
                 color=grid_line_color,
             )
+
+            # draw block grid lines
+            if i == 1:
+                # draw y grid lines
+                ax.axhline(
+                    y=y_step,
+                    linestyle=grid_line_style_quadrants,
+                    linewidth=grid_line_width_quadrants,
+                    color=grid_line_color_quadrants,
+                )
+
+                # draw x grid lines
+                ax.axvline(
+                    x=x_step,
+                    linestyle=grid_line_style_quadrants,
+                    linewidth=grid_line_width_quadrants,
+                    color=grid_line_color_quadrants,
+                )
 
         # shift ticks to midpoints of blocks
         x_ticks_shifted = np.array(x_ticks) - (spacing * 0.5)
@@ -328,11 +356,11 @@ class Map(object):
         ax.set_xticklabels(labels=x_tick_labels, minor=False)
         ax.set_yticklabels(labels=y_tick_labels[::-1], minor=False)
 
-        # layout
-        plt.tight_layout()
         return ax
 
-    def show_bar(self, granularity=1, relative=False, figure_size=None):
+    def show_bar(
+        self, granularity=1, relative=False, figure_size=None, ax=None
+    ):
         """
         Create a barplot of the current distribution of areal
         percentage for all LULC types.
@@ -356,21 +384,60 @@ class Map(object):
         else:
             bar_width = np.array(counts[:-1])
 
-        non_biosphere_area = 1 - bar_width.sum()
-
         # create barplot
-        fig, ax = plt.subplots(figsize=figure_size)
+        if ax is None:
+            _, ax = plt.subplots(figsize=figure_size)
+
         classes = convert_lulc_id_to_class(
             int_array=unique[:-1], mapping=self.simplified_lulc_mapping
         )
-
         ax.bar(x=classes, height=bar_width, color=self.cmap_hex)
-        # ax.set_title(
-        #    "Non-biosphere area: {:.2f} %".format(non_biosphere_area * 100)
-        # )
-        ax.set_xlabel("Percent of total area (%)")
-        plt.tight_layout()
+        # ax.set_xlabel("Percent of total area (%)")
         return ax
+
+    def show_dashboard(self, granularity=1, figure_size=None, relative=False):
+        """
+        Displays the game dashboard by wrapping around the other plot functions.
+
+        Parameters
+        ----------
+        layout
+        granularity
+        figure_size
+
+        Returns
+        -------
+
+        """
+        # layout
+        nrows, ncols = 4, 5
+
+        # create figure
+        fig = plt.figure(constrained_layout=False, figsize=figure_size)
+        gs = GridSpec(nrows, ncols, figure=fig)
+
+        # create axes
+        ax_map = plt.subplot(gs.new_subplotspec((0, 0), colspan=3, rowspan=4))
+        ax_bar = plt.subplot(gs.new_subplotspec((0, 3), colspan=2, rowspan=2))
+        ax_gdp = plt.subplot(gs.new_subplotspec((2, 3), colspan=2, rowspan=1))
+        ax_empl = plt.subplot(gs.new_subplotspec((3, 3), colspan=2, rowspan=1))
+
+        # populate axes with plots
+        self.show(granularity=granularity, ax=ax_map)
+        self.show_bar(granularity=granularity, relative=relative, ax=ax_bar)
+
+        # temporary placeholders
+        # TODO [minor]: add plots using real data once ready
+        ax_gdp.text(0.5, 0.5, "GDP", va="center", ha="center")
+        ax_empl.text(0.5, 0.5, "Unemployment", va="center", ha="center")
+
+        # create title
+        title = "Round {}".format(self.get_rounds(current=True))
+        fig.suptitle(title)
+
+        # tight
+        gs.tight_layout(fig)
+        # gs.update(top=0.95)
 
 
 if __name__ == "__main__":
@@ -416,18 +483,18 @@ if __name__ == "__main__":
     )
 
     # specify granularity
-    granularity = 1
+    gran = 1
 
     # initialise: this step is crucial, else nothing works!
-    field.initialise(granularity=granularity)
+    field.initialise(granularity=gran)
     print(field.current_round)
 
     # plot
-    #field.show(granularity=granularity)
-    #field.show_bar(granularity=granularity)
+    # field.show(granularity=granularity)
+    # field.show_bar(granularity=granularity)
 
     # update round
-    field.update_round()
+    field.update_round_number()
 
     # some changes
     print(field.map_simplified.shape)

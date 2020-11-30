@@ -15,6 +15,7 @@ class ConceptualModel(object):
         self.bank_account_farmers1 = {}
         self.bank_account_farmers2 = {}
 
+
 def create_dummy_matrix():
     """
     Returns: an 80 x 80 numpy matrix and a 4 x 4 numpy matrix
@@ -462,10 +463,10 @@ if __name__ == "__main__":
     plt.imshow(dummy_playing_field_matrix)
 
     # yield_map --> WORKS
-    #tot_cattle, tot_sheep, tot_n_forest, tot_c_forest = calculate_yield(
+    # tot_cattle, tot_sheep, tot_n_forest, tot_c_forest = calculate_yield(
     #    dummy_playing_field_matrix
-    #)
-    #print(tot_cattle, tot_sheep, tot_n_forest, tot_c_forest)
+    # )
+    # print(tot_cattle, tot_sheep, tot_n_forest, tot_c_forest)
 
     # crop_field --> WORKS
     m1, m2, m3, m4 = crop_field(dummy_playing_field_matrix)

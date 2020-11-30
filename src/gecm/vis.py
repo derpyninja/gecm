@@ -53,5 +53,34 @@ def show_mgmt_decisions(
     return ax
 
 
+def create_dummy_gridspec():
+    """
+    Testing purposes.
+
+    Returns
+    -------
+
+    """
+    from matplotlib.gridspec import GridSpec
+
+    def format_axes(fig):
+        for i, ax in enumerate(fig.axes):
+            ax.text(0.5, 0.5, "ax%d" % (i + 1), va="center", ha="center")
+            ax.tick_params(labelbottom=False, labelleft=False)
+
+    fig = plt.figure(constrained_layout=True)
+
+    gs = GridSpec(4, 3, figure=fig)
+    ax1 = plt.subplot(gs.new_subplotspec((0, 0), colspan=2, rowspan=4))
+    ax2 = plt.subplot(gs.new_subplotspec((0, 2), colspan=1, rowspan=2))
+    ax3 = plt.subplot(gs.new_subplotspec((2, 2), colspan=1, rowspan=2))
+
+    fig.suptitle("GridSpec")
+    format_axes(fig)
+
+    plt.show()
+
+
 if __name__ == "__main__":
-    pass
+    create_dummy_gridspec()
+    plt.show()

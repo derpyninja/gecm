@@ -146,7 +146,15 @@ def parse_mgmt_decisions(
         return df_final
 
 
-def parse_sheets(spreadsheet_id, sheets, credentials_fpath, scopes, to_numeric=False, errors="ignore", downcast="integer"):
+def parse_sheets(
+    spreadsheet_id,
+    sheets,
+    credentials_fpath,
+    scopes,
+    to_numeric=False,
+    errors="ignore",
+    downcast="integer",
+):
 
     sheet_dict = {}
 
