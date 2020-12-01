@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pandas as pd
 import rasterio as rio
 import rasterio.plot as rioplot
 from matplotlib.gridspec import GridSpec
@@ -18,6 +19,7 @@ class Map(object):
     """
     Implements the main class of the game.
     """
+
     # TODO [low]: rename class to "ConceptualModel"
     def __init__(
         self,
@@ -27,7 +29,7 @@ class Map(object):
         simplified_lulc_mapping,
         cmap=None,
         model_param_dict=None,
-        model_calc_dict=None
+        model_calc_dict=None,
     ):
         """
         TODO
@@ -429,13 +431,33 @@ class Map(object):
         ax_empl = plt.subplot(gs.new_subplotspec((3, 3), colspan=2, rowspan=1))
 
         # populate axes with plots
+
+        # MAP
         self.show(granularity=granularity, ax=ax_map)
+
+        # PROPERTY
         self.show_bar(granularity=granularity, relative=relative, ax=ax_bar)
 
-        # temporary placeholders
-        # TODO [minor]: add plots using real data once ready
-        ax_gdp.text(0.5, 0.5, "GDP", va="center", ha="center")
-        ax_empl.text(0.5, 0.5, "Unemployment", va="center", ha="center")
+        # GDP
+        # TODO: create function based on the code below later on
+        df_model_params = pd.DataFrame(self.model_param_dict, index=["value"]).T
+        df_model_params_subset = df_model_params.loc[["bank_account_farmer_1", "bank_account_farmer_2", "bank_account_forestry_1", "bank_account_forestry_1"], :]
+        df_model_params_subset["group"] = df_model_params_subset.index.values
+        df_model_params_subset["group"] = df_model_params_subset["group"].apply(lambda x: x.split("_")[2])
+        df_model_params_subset = df_model_params_subset.reset_index()
+        df_model_params_subset["index"] = df_model_params_subset["index"].apply(
+            lambda x: "_".join(x.split("_")[2:4]))
+        df_model_params_subset.groupby("group").sum().plot(ax=ax_gdp, kind='bar', stacked=True, legend=None, rot=0)
+
+        # UNEMPLOYMENT
+        # TODO [low]: implement based on martina's function and 'df_model_params_subset'
+
+        # labeling
+        ax_bar.set_ylabel("Property (# pixels)")
+        ax_gdp.set_ylabel("GDP ($)")
+        ax_gdp.set_xlabel(None)
+        ax_empl.set_ylabel("Unempl. (%)")
+        ax_empl.set_ylim(0, 100)
 
         # create title
         title = "Round {}".format(self.get_rounds(current=True))

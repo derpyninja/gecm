@@ -1,21 +1,15 @@
 import numpy as np
 import pandas as pd
+from src.gecm.dicts import simplified_lulc_mapping
 
+# dictionary isn't necessary because the conceptual model contains that information
+LANDUSE_CHANGE = (
+    0.25  # how long does it take until the new landuse returns profit.
+)
+SUBSIDIES = 0.8
+COSTS_LANDUSE_CHANGE = 10
 
-class ConceptualModel(object):
-    """
-    Implements the conceptual model class of the game.
-    """
-
-    def __init__(self, model_parameters, model_calculations):
-        self.model_parameters = model_parameters
-        self.model_calculations = model_calculations
-
-        # bank accounts
-        self.bank_account_farmers1 = {}
-        self.bank_account_farmers2 = {}
-
-
+# anzahl touristen als factor für tourism_factor
 def create_dummy_matrix():
     """
     Returns: an 80 x 80 numpy matrix and a 4 x 4 numpy matrix
@@ -57,13 +51,13 @@ def create_dummy_matrix():
     )
 
 
-# assumes four players only / if the four corner player say yes then it's true.
 def teamwork(cooperation_matrix):
     """
     assumes four players.  if the four corner player say yes then it's true.
 
     Args:
         cooperation_matrix: a numpy matrix where the corner elements are a boolean that is true if the associated player wants teamwork.
+
 
     Returns:
         a boolean - true if each corner player wants teamwork.
@@ -73,16 +67,36 @@ def teamwork(cooperation_matrix):
     if (
         cooperation_matrix[0][0]
         == cooperation_matrix[0][col - 1]
-        == cooperation_matrix[row - 1][0]
-        == cooperation_matrix[row - 1][col - 1]
+        == cooperation_matrix[col - 1][0]
+        == cooperation_matrix[col - 1][col - 1]
         == True
     ):
         teamwork = True
     return teamwork
 
 
+def unemployment_rate(earning, earning_new, unemployment):
+    """
+    Args:
+        earning:          how much money the player earned last round
+        earning_new:      how much money the player earned this round
+        unemployment:   unemployment rate of the player had last round
+
+    Returns:            unemployment rate of the player has this round
+
+    """
+
+    # based on okuns law
+    delta_unemployment = ((earning - earning_new) / earning) / 1.8
+    new_unemployment = max(0, unemployment + delta_unemployment)
+
+    return new_unemployment
+
+
 # get the total yield for the current map
+# not sure why this is necessary - the yield map function calculates the number of pixel for a matrix with values of simplified_lulc_mapping
 def calculate_yield(field, lulc_mapping, relative=True):
+
     """
 
     Args:
@@ -111,6 +125,53 @@ def calculate_yield(field, lulc_mapping, relative=True):
     return yield_dict
 
 
+def yield_map(field):
+    """
+    Args:
+        field:  a matrix with values corresponding to simplified_lulc_mapping
+    Returns:    the number of pixel for each value of simplified_lulc_mapping
+
+    """
+
+    tot_cattle = np.count_nonzero(
+        field == simplified_lulc_mapping["Cattle Farming"]
+    )
+    tot_sheep = np.count_nonzero(
+        field == simplified_lulc_mapping["Sheep Farming"]
+    )
+    tot_n_forest = np.count_nonzero(
+        field == simplified_lulc_mapping["Commercial Forest"]
+    )
+    tot_c_forest = np.count_nonzero(
+        field == simplified_lulc_mapping["Cattle Farming"]
+    )
+    return tot_cattle, tot_sheep, tot_n_forest, tot_c_forest
+
+
+# maybe calculate the tourist
+def tourism_factor(tourism_factor_matrix, gdp_tourism_factor):
+    """
+    Args:
+        tourism_factor_matrix:     part of lulc mapping at which tourism_factor takes place (20x20)
+    Returns: number of tourists and a factor "tourism_factor" that improves earnings.
+    """
+
+    cattle, sheep, n_forest, c_forest = yield_map(tourism_factor_matrix)
+    sum = cattle + sheep + n_forest + c_forest
+    m, n = tourism_factor_matrix.shape
+    sum = max(sum, m * n)
+
+    number_tourists = sheep * 2 + n_forest * 3 - c_forest * 5
+    # a minimum number of tourits always find their way
+    number_tourists = max(number_tourists, sum * 0.75)
+    # no more increased sale - tourists start thinking this is too expensive and full
+    tourism_factor = min(number_tourists / sum, 1 + gdp_tourism_factor / 100)
+    # beach bonus
+    if sum < m ** 2 - 10:
+        tourism_factor = max(0.95, tourism_factor * 1.2)
+    return number_tourists, tourism_factor
+
+
 def crop_field(field):
     """
     Devides an 2D numpy array of quadratric form into four parts.
@@ -123,143 +184,77 @@ def crop_field(field):
     m, n = field.shape
     indices1 = list(range(0, int(n / 2)))
     indices2 = list(range(int(n / 2), n))
-    m1 = field[np.ix_(indices1, indices1)]
-    m2 = field[np.ix_(indices2, indices1)]
-    m3 = field[np.ix_(indices1, indices2)]
-    m4 = field[np.ix_(indices2, indices2)]
-    return m1, m2, m3, m4
-
-
-def number_of_workers(
-    estimate_farmland,
-    estimate_forest,
-    income_farmland_sheep,
-    income_forest_commercial,
-    gdp_pc_scotland,
-    unempl_rate_scotland,
-    farmer,
-):
-    """
-
-    Args:
-        estimate_farmland:    how many pixel of land are farmland
-        estimate_forest:        how many pixel of land are forest
-        income_farmland_sheep: how much money is earned by a pixel of sheep
-        income_forest_commercial: how much money is earned by a pixel of commercial forest
-        gdp_pc_scotland:       gdp per capita of scotland
-        unempl_rate_scotlnd:  unemployment rate of scotland
-        farmer:                 boolean - if its a farmer : true, if its a forester: false
-
-
-    Returns:    The number f workers suitable for that area.
-    """
-    if farmer == True:
-        number_of_worker = (
-            estimate_farmland
-            * income_farmland_sheep
-            / gdp_pc_scotland
-            / (1 - unempl_rate_scotland)
-        )
-    else:
-        number_of_worker = (
-            estimate_forest
-            * income_forest_commercial
-            / gdp_pc_scotland
-            * estimate_forest
-            / (1 - unempl_rate_scotland)
-        )
-    return number_of_worker
-
-
-def unemployment(money, gdp_pc_scottland, number_of_worker):
-    """
-    uses the number_of_workers and the total amount of money to calculate how many can be employed
-    Args:
-        money:              amount of money earned
-        gdp_pc_scottland:   gdp_pc_of scotland
-        number_of_worker:   number of potential workers
-
-    Returns:                unemployment rate
-
-    """
-    unempl_rate_scotland = int(money / gdp_pc_scottland) / number_of_workers
-    return unempl_rate_scotland
+    fa1 = field[np.ix_(indices1, indices1)]
+    fo1 = field[np.ix_(indices2, indices1)]
+    fa2 = field[np.ix_(indices1, indices2)]
+    fo2 = field[np.ix_(indices2, indices2)]
+    return fa1, fa2, fo1, fo2
 
 
 # adapt the prices
-def profit_pp(
-    round,
+def price_per_pixel(
+    current_round,
     brexit,
-    increased_timber_prices,
-    tot_sheep,
+    tot_sheep_0,
     tot_cattle,
     tot_n_forest,
     tot_c_forest,
-    cattle_pp_0,
-    sheep_pp_0,
-    n_forest_pp_0,
-    c_forest_pp_0,
     income_farmland_cattle,
     income_farmland_sheep,
-    income_forest_commercial,
     income_forest_native,
+    income_forest_commercial,
 ):
     """
     calculates current prices depending on demand based on an estimate on what's produced in the beginning.
     Args:
-        round:                      timeline of the game
-        brexit:                     time at which brexit happens
-        increased_timber_prices:    factor for higher timber prices after brexit
-        tot_sheep:                  a list of the total amount of sheep for each timestep
-        tot_cattle:
+        current_round:                  timeline of the game
+        brexit:                         time at which brexit happens
+        tot_c_forest_0:
+        tot_n_forest_0:
+        tot_sheep_0
+
+        tot_cattle:                     total amount of pixel for each the current round
         tot_n_forest:
         tot_c_forest:
-        cattle_pp_0:                  the price of the product at the beginning
-        sheep_pp_0:
-        n_forest_pp_0:
-        c_forest_pp_0:
-        income_farmland_cattle:
-        income_farmland_sheep:          income per pixel
-        income_farmland_cattle:
-        income_forest_commercial:
-        income_forest_commercial:
 
+        income_farmland_cattle,
+        income_farmland_sheep,
+        income_forest_native,
+        income_forest_commercial,
     Returns: the price of the current round for cattle, sheep, native forest and commercial forest
 
     """
-    # doesn't take tourism effects into account yet. and the equations are pretty random.
-    cattle_pp_new = (
-        tot_sheep[round]
-        / (
-            1
-            + tot_cattle[round] * income_farmland_cattle / income_farmland_sheep
-            + tot_sheep[round]
-        )
-        * cattle_pp_0
-    )  # a certain demand - + 1 so that its never going to infinity should all land become forest
-    sheep_pp_new = sheep_pp_0  # assume sheep can go everywhere, eat everything and no degradation and its profit only influences cattle by competition
-    c_forest_pp_new = (
-        (tot_c_forest[0] + tot_n_forest[0])
-        / (
-            1
-            + tot_c_forest[round]
-            * income_forest_commercial
-            / income_forest_commercial
-            + tot_n_forest[round]
-        )
-        * c_forest_pp_0
+    # doesn't take tourism_factor effects into account yet. and the equations are pretty random.
+    cattle_price_new = income_farmland_cattle + (
+        tot_cattle
+        / (income_farmland_cattle / income_farmland_sheep)
+        / tot_sheep_0
+    ) * (income_farmland_sheep - income_farmland_cattle)
+    sheep_price_new = income_farmland_sheep  # assume sheep can go everywhere, eat everything and no degradation and its profit only influences cattle by competition
+    c_forest_price_new = income_forest_commercial + tot_c_forest / (
+        income_forest_commercial / income_forest_native
+    ) / (tot_n_forest + tot_c_forest) * (
+        income_forest_native - income_forest_commercial
     )
-    n_forest_pp_new = n_forest_pp_0  # assumes native forest can grow everywhere and its profit only influences the commercial forest through competition in the timber market
-    if brexit > round:
-        n_forest_pp_new *= increased_timber_prices  # less import of wood.
-        c_forest_pp_new *= increased_timber_prices
+    n_forest_price_new = income_forest_native  # assumes native forest can grow everywhere and its profit only influences the commercial forest through competition in the timber market
 
-    return cattle_pp_new, sheep_pp_new, n_forest_pp_new, c_forest_pp_new
+    if brexit > current_round:
+        n_forest_price_new = (
+            n_forest_price_new / (1 + SUBSIDIES) * 2
+        )  # less import of wood.
+        c_forest_price_new = c_forest_price_new / SUBSIDIES
+
+    return (
+        cattle_price_new,
+        sheep_price_new,
+        n_forest_price_new,
+        c_forest_price_new,
+    )
 
 
-def money_pp_farmer(
-    round,
-    tourism,
+def money_farmer(
+    current_round,
+    tourism_factor,
     teams,
     brexit,
     teamwork,
@@ -267,183 +262,218 @@ def money_pp_farmer(
     area_cattle,
     area_c_forest,
     area_n_forest,
-    sheep_pp,
-    cattle_pp,
-    n_forest_pp,
-    c_forest_pp,
-    nf_to_s=0,
-    nf_to_c=0,
-    s_to_c=0,
-    s_to_nf=0,
-    c_to_s=0,
-    c_to_nf=0,
-    subsidies=0,
-    starting_capital=0,
+    sheep_price,
+    cattle_price,
+    n_forest_price,
+    c_forest_price,
+    bank_account_farmer_1,
+    bank,
+    gdp_pc_scotland,
 ):
     """
 
     Args:
-        round:      timeline of the game
-        tourism:    a factor which the profit can be multiplied with
-        teams:      integer after which round is teamwork allowed
-        brexit:     at which round happens brexit
-        teamwork:   boolea - does teamwork take place
-        area_sheep: list of how many sheep does the farmer own
+        current_round:
+        tourism_factor:             tourism_factor (from tourism function
+        teams:                      in which round are teams allowed
+        brexit:                     in which round does brexit happen
+        teamwork:                   is teamwork true or false
+        area_sheep:                 number of pixel with the respective landuse
         area_cattle:
         area_c_forest:
         area_n_forest:
-        sheep_pp:   list of what are the prices for each sheep
-        cattle_pp:
-        n_forest_pp:
-        c_forest_pp:
-        nf_to_s:        The prices for landuse change. I just copy pasted them at the begining of the function.
-        nf_to_c:
-        s_to_c:
-        s_to_nf:
-        c_to_s:
-        c_to_nf:
-        subsidies:      same
-        starting_capital:   integer - how much does he own in the beginning
+        sheep_price:                list of prices
+        cattle_price:
+        n_forest_price:
+        c_forest_price:
+        bank_account_farmer_1:      assumes same bank_account at the begining for both farmer
+        bank:                       how much money is in the bank-account (in round 0 bank_account_farmer_1
+        gdp_pc_scotland:
 
-    Returns:            how much money does a farmer recieve at the currently
+    Returns:                        earnings and bank-account
 
     """
-    cf_to_nf = 0.5
-    nf_to_cf = 0.5
-    s_to_c = 0.5
-    s_to_nf = c_to_nf = 1  # must stay the same (brexit calculations for farmer)
-    c_to_s = 0.5
-    nf_to_s = (
-        -0.1
-    )  # assuming farmers can convert native forest to farmland but not commercial forest (sell wood)
-    nf_to_c = 0.8
-    subsidies = 0.8
-
-    if round == 0:
-        money = starting_capital
+    if current_round == 0:
+        earning = gdp_pc_scotland
+        bank_current = bank_account_farmer_1
     else:
         # costs of landscape change
         try:
-            d_sheep = area_sheep[round] - area_sheep[round - 1]
+            d_sheep = area_sheep[current_round] - area_sheep[current_round - 1]
         except:
             pass
-        d_cattle = area_cattle[round] - area_cattle[round - 1]
+        d_cattle = area_cattle[current_round] - area_cattle[current_round - 1]
         d_n_forest = (
-            area_n_forest[round] - area_n_forest[round - 1]
+            area_n_forest[current_round] - area_n_forest[current_round - 1]
         )  # necessary to potentially allow two changes (i.e. a rise or native forests and cattle on cost of sheep )
         m_change = 0
         m_brexit = 0
+        m_teamwork = 0
         if d_n_forest < 0:
             m_change += (
                 min([d_cattle, d_n_forest], key=abs)
-                * nf_to_c
-                * cattle_pp[round]
-            )
-            m_change += (
-                min([d_sheep, d_n_forest], key=abs) * nf_to_s * sheep_pp[round]
-            )
-        if d_sheep < 0:
-            m_change += (
-                min([d_cattle, d_sheep], key=abs) * s_to_c * cattle_pp[round]
+                * LANDUSE_CHANGE
+                * cattle_price[current_round]
             )
             m_change += (
                 min([d_sheep, d_n_forest], key=abs)
-                * s_to_nf
-                * n_forest_pp[round]
+                * LANDUSE_CHANGE
+                * sheep_price[current_round]
+            )
+        if d_sheep < 0:
+            m_change += (
+                min([d_cattle, d_sheep], key=abs)
+                * LANDUSE_CHANGE
+                * cattle_price[current_round]
+            )
+            m_change += (
+                min([d_sheep, d_n_forest], key=abs)
+                * LANDUSE_CHANGE
+                * n_forest_price[current_round]
             )
         if d_cattle < 0:
             m_change += (
-                min([d_cattle, d_sheep], key=abs) * c_to_s * sheep_pp[round]
+                min([d_cattle, d_sheep], key=abs)
+                * LANDUSE_CHANGE
+                * sheep_price[current_round]
             )
             m_change += (
                 min([d_cattle, d_n_forest], key=abs)
-                * c_to_nf
-                * n_forest_pp[round]
+                * LANDUSE_CHANGE
+                * n_forest_price[current_round]
             )
-        # money from the area
-        m_area = (area_sheep[round] * sheep_pp[round]) + (
-            area_cattle[round] * cattle_pp[round]
+        # earning from the area
+        m_area = (area_sheep[current_round] * sheep_price[current_round]) + (
+            area_cattle[current_round] * cattle_price[current_round]
         )
-        if teamwork == True and teams > round:
+        # divided by 10 to reduce that profit
+        if teamwork == True and teams <= current_round:
             m_teamwork = (
-                area_c_forest[round] * c_forest_pp[round]
-                + area_n_forest[round] * n_forest_pp[round]
+                area_c_forest[current_round]
+                * c_forest_price[current_round]
+                / 10
+                + area_n_forest[current_round]
+                * n_forest_price[current_round]
+                / 10
             )
-        if brexit > round:
-            m_brexit = (subsidies - 1) * (area_sheep[round] * sheep_pp[round])
-            if d_n_forest > 0:
-                m_brexit += d_n_forest * (subsidies - 1)
-        m_tourism = tourism * m_area
-        # maybe return later on the performance of each landuse/industrie --> append() so that its easy to plot?
-        money = m_area + m_change + m_tourism + m_teamwork + brexit
+        if brexit <= current_round:
+            m_brexit = (SUBSIDIES - 1) * (
+                area_sheep[current_round] * sheep_price[current_round]
+            )
+            # if d_n_forest > 0:
+            #    m_brexit += d_n_forest * (SUBSIDIES - 1)
+        m_tourism = tourism_factor * m_area - m_area
 
-    return money
+        earning = (
+            (m_area + m_change + m_tourism + m_teamwork + m_brexit)
+            * gdp_pc_scotland
+            / (50 * (area_sheep[current_round] + area_cattle[current_round]))
+        )
+
+        bank_current = (
+            bank
+            - (d_cattle + d_n_forest + d_sheep) / 2 * COSTS_LANDUSE_CHANGE
+            + earning
+            - gdp_pc_scotland
+        )
+    return (
+        earning,
+        bank_current,
+    )  # , m_area, m_change, m_tourism, m_brexit, m_teamwork
 
 
-def money_pp_forester(
-    round,
-    tourism,
+def money_forester(
+    current_round,
+    tourism_factor,
     teams,
     brexit,
     teamwork,
     area_sheep,
     area_c_forest,
     area_n_forest,
-    sheep_pp,
-    n_forest_pp,
-    c_forest_pp,
-    nf_to_cf,
-    cf_to_nf,
-    subsidies,
-    starting_capital,
+    sheep_price,
+    n_forest_price,
+    c_forest_price,
+    bank_account_forestry_1,
+    bank,
+    gdp_pc_scotland,
 ):
     """
-    how much money does a forester earn per round - similar to farmer.
-    area_c_forest: number of pixel displaying commercial forest
-    area_n_forest: number of pixel displaying native forest
-    round: round of the game (starting at 0)
+
+    Args:
+        current_round:
+        tourism_factor:             tourism_factor (from tourism function
+        teams:                      in which round are teams allowed
+        brexit:                     in which round does brexit happen - doesn't include higher timber prices here.
+        teamwork:                   is teamwork true or false
+        area_sheep:                 number of pixel with the respective landuse
+        area_cattle:
+        area_c_forest:
+        area_n_forest:
+        sheep_price:                list of prices
+        cattle_price:
+        n_forest_price:
+        c_forest_price:
+        bank_account_farmer_1:      assumes same bank_account at the begining for both farmer
+        bank:                       how much money is in the bank-account (in round 0 bank_account_farmer_1
+        gdp_pc_scotland:
+
+    Returns:                        earnings and bank-account
+
     """
 
-    cf_to_nf = 0.5
-    nf_to_cf = 0.5
-    s_to_c = 0.5
-    s_to_nf = c_to_nf = 1  # must stay the same (brexit calculations for farmer)
-    c_to_s = 0.5
-    nf_to_s = (
-        -0.1
-    )  # assuming farmers can convert native forest to farmland but not commercial forest (sell wood)
-    nf_to_c = 0.8
-    subsidies = 0.8
-
-    if round == 0:
-        money = starting_capital
+    if current_round == 0:
+        earning = gdp_pc_scotland
+        bank_current = bank_account_forestry_1
     else:
         d_n_forest = (
-            area_n_forest[round] - area_n_forest[round - 1]
+            area_n_forest[current_round] - area_n_forest[current_round - 1]
         )  # necessary to potentially allow two changes (i.e. a rise or native forests and cattle on cost of sheep )
         m_change = 0
         m_brexit = 0
+        m_teamwork = 0
         # ich habe momentan gemacht, dass man nur etwas verkleinern darf!
         if d_n_forest < 0:
-            m_change += d_n_forest * nf_to_cf * c_forest_pp[round]
+            m_change += (
+                d_n_forest * LANDUSE_CHANGE * c_forest_price[current_round]
+            )
         if d_n_forest > 0:
-            m_change += d_n_forest * cf_to_nf * n_forest_pp[round]
-        # money from the area
-        m_area = (area_n_forest[round] * n_forest_pp[round]) + (
-            (area_c_forest[round] * c_forest_pp[round])
-        )
-        if teamwork == True and teams > round:
-            m_teamwork = area_sheep[round] * sheep_pp[round]
-        if brexit > round:
-            if d_n_forest > 0:
-                m_brexit = d_n_forest * (subsidies - 1) + (subsidies - 1) * (
-                    area_sheep[round] * sheep_pp[round]
-                )
-        m_tourism = tourism * m_area
-        # maybe return later on the performance of each landuse/industrie --> append() so that its easy to plot?
-        money = m_area + m_change + m_tourism + m_teamwork + brexit
+            m_change += (
+                d_n_forest * LANDUSE_CHANGE * n_forest_price[current_round]
+            )
+        # earning from the area
+        m_area = (
+            area_n_forest[current_round] * n_forest_price[current_round]
+        ) + ((area_c_forest[current_round] * c_forest_price[current_round]))
+        if teamwork == True and teams <= current_round:
+            m_teamwork = area_sheep[current_round] * sheep_price[current_round]
 
-    return money
+        if brexit <= current_round:
+            if d_n_forest > 0:
+                m_brexit = d_n_forest * (SUBSIDIES - 1)
+            m_brexit += (SUBSIDIES - 1) * (
+                area_sheep[current_round] * sheep_price[current_round]
+            )
+
+        m_tourism_factor = tourism_factor * m_area
+        # maybe return later on the performance of each landuse/industrie --> append() so that its easy to plot?
+        # has to make more - maybe beacause he has less land? has still much more...
+        earning = (
+            (m_area + m_change + m_tourism_factor + m_teamwork + m_brexit)
+            * gdp_pc_scotland
+            / (
+                100
+                * (area_n_forest[current_round] + area_c_forest[current_round])
+            )
+        )
+        bank_current = (
+            bank
+            - abs(d_n_forest) * COSTS_LANDUSE_CHANGE
+            + earning
+            - gdp_pc_scotland
+        )
+
+    return earning, bank_current
 
 
 if __name__ == "__main__":
@@ -459,15 +489,14 @@ if __name__ == "__main__":
         1, 4, dummy_playing_field_matrix.shape, np.int8
     )
 
-    # plot dummy data
-    plt.imshow(dummy_playing_field_matrix)
-
     # yield_map --> WORKS
-    # tot_cattle, tot_sheep, tot_n_forest, tot_c_forest = calculate_yield(
-    #    dummy_playing_field_matrix
-    # )
-    # print(tot_cattle, tot_sheep, tot_n_forest, tot_c_forest)
+    tot_cattle, tot_sheep, tot_n_forest, tot_c_forest = calculate_yield(
+        dummy_playing_field_matrix
+    )
+    print(tot_cattle, tot_sheep, tot_n_forest, tot_c_forest)
 
     # crop_field --> WORKS
     m1, m2, m3, m4 = crop_field(dummy_playing_field_matrix)
     print(m1.shape, m2.shape, m3.shape, m4.shape)
+
+    # plt.show()
