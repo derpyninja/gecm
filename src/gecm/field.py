@@ -16,9 +16,9 @@ from src.gecm.base import (
 
 class Map(object):
     """
-    Implements the main class of the game describing the playing field.
+    Implements the main class of the game.
     """
-
+    # TODO [low]: rename class to "ConceptualModel"
     def __init__(
         self,
         fpath,
@@ -26,6 +26,8 @@ class Map(object):
         lulc_remapping,
         simplified_lulc_mapping,
         cmap=None,
+        model_param_dict=None,
+        model_calc_dict=None
     ):
         """
         TODO
@@ -68,6 +70,10 @@ class Map(object):
         self.cmap_str = "Paired"
         self.n_colors = None
         self.cmap_hex = None
+
+        # conceptual model (!)
+        self.model_param_dict = model_param_dict
+        self.model_calc_dict = model_calc_dict
 
     def initialise(self, masked=True, granularity=0):
         """
