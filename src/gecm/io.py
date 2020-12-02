@@ -189,5 +189,44 @@ def parse_sheets(
     return sheet_dict
 
 
+def parse_all_mgmt_decisions(config_file, credentials_fpath):
+    # initialise container
+    dict_of_mgmt_decisions_dfs = {}
+
+    # iteratively parse sheets of all through stakeholder groups
+    for stakeholder_group in ["farmers", "foresters", "tourism"]:
+        dict_of_mgmt_decisions_dfs[stakeholder_group] = parse_mgmt_decisions(
+            spreadsheet_id=config_file.get(
+                section="gdrive_spreadsheet_ids",
+                option="spreadsheet_id_{}".format(stakeholder_group),
+            ),
+            sheets=parse_list(
+                config_string=config_file.get(
+                    section="gdrive_sheet_names",
+                    option="sheet_names_{}".format(stakeholder_group),
+                )
+            ),
+            credentials_fpath=credentials_fpath,  # API credentials
+            scopes=[config_file.get(section="default", option="scopes")],
+            # If modifying these scopes, delete the file "token.pickle".
+            unstack_data=False,
+        )
+
+    # combine
+    df_mgmt_decisions = pd.concat(
+        dict_of_mgmt_decisions_dfs.values(),
+        keys=dict_of_mgmt_decisions_dfs.keys(),
+    )
+    df_mgmt_decisions.index.rename("stakeholder", level=0, inplace=True)
+    df_mgmt_decisions_long = df_mgmt_decisions.reset_index()
+    df_mgmt_decisions_long["id"] = df_mgmt_decisions_long.index.values
+
+    # melt
+    id_vars = ["stakeholder", "round", "player", "Plot", "Teamwork"]
+    value_vars = ["Sheep", "Cattle", "Native Forest", "Commercial Forest"]
+
+    return df_mgmt_decisions_long.melt(id_vars=id_vars, value_vars=value_vars)
+
+
 if __name__ == "__main__":
     pass

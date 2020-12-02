@@ -35,7 +35,7 @@ From these initial parameters, we create more **"derived parameters"**:
 
 Parameter | Data structure | Data type | Shape | Description
 --- | --- | --- | --- | ---
-n_pixels_block | int | np.uint8 | (1,) | n_pixels_block := n_blocks / n_pixels.
+n_pixels_per_block | int | np.uint8 | (1,) | n_pixels_block := n_blocks / n_pixels.
 
 
 This table summarizes **all matrices necessary for fully describing the
@@ -44,7 +44,7 @@ initial state of the playing field AND updating it after each round**:
 Matrix | Variable name | Data structure | Data type | Shape | General description | Mapping description
 --- | --- | --- | --- | --- | --- | ---
 **Land-use and land-cover (LULC) types** | lulc_matrix | np.ma | np.unit8 | (n_pixels, n_pixels) | defines the land-cover and land-use types of the playing field | each integer maps to a unique LULC class.
-**Plot/Block Definitions** | plot_definition_matrix | np.ma | np.unit8 | (n_blocks, n_blocks) --> (n_pixels, n_pixels) |  defines the plots/blocks the players can manipulate | each integer maps to a unique plot/block identifier. this "small" matrix is brought into (n_pixels, n_pixels) shape via the kronecker delta function: (n_blocks, n_blocks) --> (n_pixels, n_pixels).
+**Plot/Block Definitions** | block_definition_matrix | np.ma | np.unit8 | (n_blocks, n_blocks) --> (n_pixels, n_pixels) |  defines the plots/blocks the players can manipulate | each integer maps to a unique plot/block identifier. this "small" matrix is brought into (n_pixels, n_pixels) shape via the kronecker delta function: (n_blocks, n_blocks) --> (n_pixels, n_pixels).
 **Cooperation/Teamwork** | cooperation_matrix | np.ma | np.bool | (n_blocks, n_blocks) --> (n_pixels, n_pixels) |  defines in which block players from a certain stakeholder group are open for cooperation with players from other stakeholder groups. | TRUE for blocks/plots/pixels where stakeholders are open for cooperation, else FALSE. this "small" matrix is brought into (n_pixels, n_pixels) shape via the kronecker delta function: (n_blocks, n_blocks) --> (n_pixels, n_pixels).
 **Tourism/SSDA** | tourism_matrix | np.ma | np.bool | (n_blocks, n_blocks) --> (n_pixels, n_pixels) |  defines the plot which SSDA designates as being particularly valuable for tourism based on biodiversity, etc. | TRUE for blocks/plots/pixels which the SSDA designated as particularly valuable for touristic activities, else FALSE. this "small" matrix is brought into (n_pixels, n_pixels) shape via the kronecker delta function: (n_blocks, n_blocks) --> (n_pixels, n_pixels).
 
