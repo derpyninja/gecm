@@ -3,17 +3,12 @@ import numpy as np
 import pandas as pd
 import rasterio as rio
 import rasterio.plot as rioplot
-from matplotlib.gridspec import GridSpec
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from matplotlib.colors import ListedColormap
 
-# from src.gecm import io
-from src.gecm.vis import cmap2hex
-from src.gecm.base import (
-    invert_dict,
-    convert_lulc_id_to_class,
-    remap_lulc_dict,
-    remap_array_with_dict,
-)
+
+from src.gecm import io, vis, base, dicts
 
 
 class MatrixGame(object):
@@ -31,6 +26,8 @@ class MatrixGame(object):
         model_param_dict=None,
         model_calc_dict=None,
         config_file=None,
+        credentials_fpath=None,
+        df_mgmt_decisions_long=None,
     ):
         """
         TODO
@@ -62,7 +59,7 @@ class MatrixGame(object):
         self.rows = self.src.width
         self.cols = self.src.height
 
-        # currently only works with 4 blocks
+        # define management blocks (currently only works with n=4 blocks)
         self.n_blocks = 4
         self.n_pixels_per_block = int(self.n_pixels / self.n_blocks)
         self.block_definition_matrix_block_lvl = None  # n_blocks x n_blocks
@@ -79,11 +76,11 @@ class MatrixGame(object):
         self.tourism_matrix_block_lvl = self.cooperation_matrix_block_lvl
         self.tourism_matrix_pixel_lvl = self.cooperation_matrix_pixel_lvl
 
-        # raster data describing the map. currently, you can only play on
+        # raster data describing the map. one can only play on
         # the simplified lulc matrix playing field
         self.lulc_matrix_original = None
         self.lulc_matrix = None
-        self.lulc_matrix_array = None
+        self.lulc_matrix_stack = None
 
         # LULC mappings
         self.original_lulc_mapping = original_lulc_mapping
@@ -91,11 +88,26 @@ class MatrixGame(object):
         self.simplified_lulc_mapping = simplified_lulc_mapping
         self.remapping_dict = None
 
+        # management decision data
+        self.df_mgmt_decisions_long = df_mgmt_decisions_long
+
+        # property rights per block
+        self.property_rights_matrix = None
+
+        # Google APIs
+        self.credentials_fpath = credentials_fpath
+
         # colormap
         self.cmap = cmap
         self.cmap_str = "Paired"
         self.n_colors = None
         self.cmap_hex = None
+        self.simplified_property_cm = ListedColormap(
+            [
+                dicts.stakeholder_color_dict[x]
+                for x in dicts.stakeholder_color_dict.keys()
+            ]
+        )
 
         # configuration file data
         self.config_file = config_file
@@ -120,7 +132,7 @@ class MatrixGame(object):
         # read raw data
         self._read_lulc_data(masked=masked)
 
-        # define small block matrix
+        # define blocks in block-level matrix
         matrix_indizes = (
             np.indices((self.n_blocks, self.n_blocks), dtype="uint8") + 1
         )
@@ -129,7 +141,7 @@ class MatrixGame(object):
             row_indizes.astype(np.str), column_indizes.astype(np.str)
         ).astype(np.uint8)
 
-        # define big block matrix
+        # define blocks in pixel-level matrix
         self.block_definition_matrix_pixel_lvl = np.multiply(
             self.unit_matrix,
             np.kron(
@@ -140,6 +152,9 @@ class MatrixGame(object):
             ),
         )
 
+        # assign property rights based on hard-coded dict
+        self._assign_property_rights()
+
         # optional: lulc map simplification (through spatial disaggregation)
         if granularity == 1:
             # simplify and store
@@ -147,12 +162,18 @@ class MatrixGame(object):
 
             # create 3D array out of 2D array to store changed maps of all
             # rounds along the third (z-) axis dimension
-            self.lulc_matrix_array = self.lulc_matrix.reshape(
+            self.lulc_matrix_stack = self.lulc_matrix.reshape(
                 (self.lulc_matrix.shape[0], self.lulc_matrix.shape[1], 1)
             )
 
         # self._create_cmap(granularity=granularity)
-        self.cmap_hex = cmap2hex(self.cmap)
+        self.cmap_hex = vis.cmap2hex(self.cmap)
+
+    def fetch_mgmt_decisions(self):
+        self.df_mgmt_decisions_long = io.parse_all_mgmt_decisions(
+            config_file=self.config_file,
+            credentials_fpath=self.credentials_fpath,
+        )
 
     def get_rounds(self, current=True):
         """
@@ -206,14 +227,14 @@ class MatrixGame(object):
         -------
         TODO
         """
-        simplified_lulc_mapping_long = remap_lulc_dict(
+        simplified_lulc_mapping_long = base.remap_lulc_dict(
             old_dict=self.original_lulc_mapping,
             remap_dict=self.lulc_remapping,
             remap_dict_ids=self.simplified_lulc_mapping,
         )
 
         # invert original mapping
-        original_dict_inv = invert_dict(self.original_lulc_mapping)
+        original_dict_inv = base.invert_dict(self.original_lulc_mapping)
 
         # create remapping scheme
         assert len(original_dict_inv.keys()) == len(
@@ -225,7 +246,7 @@ class MatrixGame(object):
 
         # simplify LULC representation by aggregating classes based on a
         # pre-defined remapping scheme
-        self.lulc_matrix = remap_array_with_dict(
+        self.lulc_matrix = base.remap_array_with_dict(
             input_array=self.lulc_matrix_original, mapping=self.remapping_dict
         )
 
@@ -273,7 +294,7 @@ class MatrixGame(object):
 
         self.n_colors = len(np.unique(raster)) - 1  # -1 for np.nan
         self.cmap = plt.get_cmap(self.cmap_str, lut=self.n_colors)
-        self.cmap_hex = cmap2hex(self.cmap)
+        self.cmap_hex = vis.cmap2hex(self.cmap)
         return None
 
     def _convert(self):
@@ -285,13 +306,16 @@ class MatrixGame(object):
         np.ma
             Masked array of LULC strings
         """
-        return convert_lulc_id_to_class(
+        return base.convert_lulc_id_to_class(
             self.lulc_matrix_original, mapping=self.original_lulc_mapping
         )
 
-    def update(self):
-        # TODO
-        pass
+    def _assign_property_rights(self):
+        arr = self.block_definition_matrix_pixel_lvl.copy()
+        for k, v in dicts.stakeholder_property_dict.items():
+            for j in v:
+                arr[arr == j] = k
+        self.property_rights_matrix = arr
 
     def show(self, granularity=1, figure_size=None, ax=None):
         """
@@ -444,14 +468,20 @@ class MatrixGame(object):
         if ax is None:
             _, ax = plt.subplots(figsize=figure_size)
 
-        classes = convert_lulc_id_to_class(
+        classes = base.convert_lulc_id_to_class(
             int_array=unique[:-1], mapping=self.simplified_lulc_mapping
         )
         ax.bar(x=classes, height=bar_width, color=self.cmap_hex)
         # ax.set_xlabel("Percent of total area (%)")
         return ax
 
-    def show_dashboard(self, granularity=1, figure_size=None, relative=False):
+    def show_dashboard(
+        self,
+        granularity=1,
+        figure_size=None,
+        property_rights=False,
+        relative=False,
+    ):
         """
         Displays the game dashboard by wrapping around the other plot functions.
 
@@ -479,6 +509,11 @@ class MatrixGame(object):
         ax_empl = plt.subplot(gs.new_subplotspec((3, 3), colspan=2, rowspan=1))
 
         # populate axes with plots
+        # ---------------------------------------------------------------------
+
+        # property rights
+        if property_rights:
+            ax_map.imshow(self.property_rights_matrix, cmap="Blues", zorder=0)
 
         # MAP
         self.show(granularity=granularity, ax=ax_map)
@@ -527,6 +562,9 @@ class MatrixGame(object):
         # tight
         gs.tight_layout(fig)
         # gs.update(top=0.95)
+
+    def show_all_mgmt_decisions(self):
+        return vis.show_all_mgmt_decisions(self.df_mgmt_decisions_long)
 
 
 if __name__ == "__main__":

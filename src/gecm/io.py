@@ -221,11 +221,21 @@ def parse_all_mgmt_decisions(config_file, credentials_fpath):
     df_mgmt_decisions_long = df_mgmt_decisions.reset_index()
     df_mgmt_decisions_long["id"] = df_mgmt_decisions_long.index.values
 
-    # melt
-    id_vars = ["stakeholder", "round", "player", "Plot", "Teamwork"]
-    value_vars = ["Sheep", "Cattle", "Native Forest", "Commercial Forest"]
+    # lower case column var names
+    df_mgmt_decisions_long.columns = df_mgmt_decisions_long.columns.str.lower()
 
-    return df_mgmt_decisions_long.melt(id_vars=id_vars, value_vars=value_vars)
+    # melt data set
+    id_vars = ["stakeholder", "round", "player", "plot", "teamwork"]
+    value_vars = ["sheep", "cattle", "native forest", "commercial forest"]
+    df_out = df_mgmt_decisions_long.melt(id_vars=id_vars, value_vars=value_vars)
+
+    # clean select columns
+    df_out.loc[:, "plot"] = df_out.loc[:, "plot"].fillna(0).astype("int8")
+    df_out.loc[:, "teamwork"] = (
+        df_out.loc[:, "teamwork"].fillna(False).astype("bool")
+    )
+
+    return df_out
 
 
 if __name__ == "__main__":

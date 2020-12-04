@@ -1,3 +1,4 @@
+import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -49,8 +50,31 @@ def show_mgmt_decisions(
 
     # aggregate decisions per stakeholder group are bounded by [-100, +100] %
     ax.set_ylim(-100, 100)
-
     return ax
+
+
+def show_all_mgmt_decisions(df_mgmt_decisions_long):
+    # https://seaborn.pydata.org/tutorial/relational.html: seaborn supports semantics of hue, size, and style
+    g = sns.catplot(
+        x="round",
+        y="value",
+        hue="variable",
+        col="stakeholder",
+        kind="bar",
+        data=df_mgmt_decisions_long,
+        saturation=0.5,
+        ci=None,
+        aspect=0.6,
+    )
+
+    (
+        g.set_axis_labels("Round", "Management Decision (%)")
+        # .set_xticklabels(["round", "round", "round"])
+        # .set_titles("{col_name} {col_var}")
+        .set(ylim=(-55, 55)).despine(left=False)
+    )
+
+    return g
 
 
 def create_dummy_gridspec():

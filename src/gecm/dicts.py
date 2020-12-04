@@ -61,3 +61,25 @@ simplified_lulc_mapping_colors = {
     3: "#b2df8a",
     # 4: "#fdbf6f"
 }
+
+stakeholder_id_dict = {
+    "Farmer_1": 100,
+    "Farmer_2": 110,
+    "Forester_1": 120,
+    "Forester_2": 130,
+    "SSDA": 150,
+}
+
+stakeholder_property_dict = {
+    100: [11, 12, 21, 22],
+    110: [33, 34, 43, 44],
+    120: [13, 14, 23, 24],
+    130: [31, 32, 41, 42],
+}
+
+stakeholder_color_dict = {
+    100: "#fee090",
+    110: "#fdbf6f",
+    120: "#33a02c",
+    130: "#b2df8a",
+}
