@@ -612,7 +612,7 @@ if __name__ == "__main__":
         fpath=fpath_map,
         original_lulc_mapping=original_lulc_mapping,
         simplified_lulc_mapping=simplified_lulc_mapping,
-        lulc_remapping=lulc_remapping
+        lulc_remapping=lulc_remapping,
     )
 
     # specify granularity

@@ -370,12 +370,21 @@ def money_farmer(
             / (50 * (area_sheep[current_round] + area_cattle[current_round]))
         )
 
+        # inserted
+        if earning > 30000 and earning < 45000:
+            earning *= 0.79
+        if earning > 45000 and earning < 150000:
+            earning *= 0.59
+        if earning > 150000:
+            earning *= 0.56
+
         bank_current = (
             bank
             - (d_cattle + d_n_forest + d_sheep) / 2 * COSTS_LANDUSE_CHANGE
             + earning
             - gdp_pc_scotland
         )
+
     return (
         earning,
         bank_current,
@@ -466,6 +475,15 @@ def money_forester(
                 * (area_n_forest[current_round] + area_c_forest[current_round])
             )
         )
+
+        # inserted
+        if earning > 30000 and earning < 45000:
+            earning *= 0.79
+        if earning > 45000 and earning < 150000:
+            earning *= 0.59
+        if earning > 150000:
+            earning *= 0.56
+
         bank_current = (
             bank
             - abs(d_n_forest) * COSTS_LANDUSE_CHANGE
