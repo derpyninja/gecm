@@ -22,7 +22,6 @@ class MatrixGame(object):
         original_lulc_mapping,
         lulc_remapping,
         simplified_lulc_mapping,
-        cmap=None,
         model_param_dict=None,
         model_calc_dict=None,
         config_file=None,
@@ -591,7 +590,6 @@ if __name__ == "__main__":
         simplified_lulc_mapping,
         simplified_lulc_mapping_colors,
     )
-    from matplotlib.colors import ListedColormap
     from pathlib import Path
 
     # define dirs
@@ -602,19 +600,11 @@ if __name__ == "__main__":
     figure_dir = os.path.join(project_dir, "plots")
 
     # playing field size
-    rows = cols = 40
+    rows = cols = 80
 
     # set path to raster data
     fpath_map = os.path.join(
         data_processed, "NFI_rasterized_{}_{}.tif".format(rows, cols)
-    )
-
-    # define cmap
-    simplified_lulc_cm = ListedColormap(
-        [
-            simplified_lulc_mapping_colors[x]
-            for x in simplified_lulc_mapping_colors.keys()
-        ]
     )
 
     # load map
@@ -622,8 +612,7 @@ if __name__ == "__main__":
         fpath=fpath_map,
         original_lulc_mapping=original_lulc_mapping,
         simplified_lulc_mapping=simplified_lulc_mapping,
-        lulc_remapping=lulc_remapping,
-        cmap=simplified_lulc_cm,
+        lulc_remapping=lulc_remapping
     )
 
     # specify granularity
