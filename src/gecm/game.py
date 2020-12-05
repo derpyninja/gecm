@@ -276,7 +276,10 @@ class MatrixGame(object):
         if granularity == 0:
             return self.lulc_matrix_original, self.original_lulc_mapping
         elif granularity == 1:
-            return self.lulc_matrix, self.remapping_dict
+            return (
+                self.lulc_matrix_stack[:, :, self.current_round],
+                self.remapping_dict,
+            )
         else:
             raise NotImplementedError
 

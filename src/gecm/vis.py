@@ -54,12 +54,12 @@ def show_mgmt_decisions(
 
 
 def show_all_mgmt_decisions(df_mgmt_decisions_long):
-    print(df_mgmt_decisions_long.head())
+
     # https://seaborn.pydata.org/tutorial/relational.html: seaborn supports semantics of hue, size, and style
     g = sns.catplot(
         x="Round",
-        y="value",
-        hue="variable",
+        y="mgmt_decision",
+        hue="lulc_category",
         col="Stakeholder",
         kind="bar",
         data=df_mgmt_decisions_long,

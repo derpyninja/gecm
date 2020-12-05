@@ -6,6 +6,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from src.gecm import dicts
 
 
 def config_describe(config_file):
@@ -232,13 +233,25 @@ def parse_all_mgmt_decisions(config_file, credentials_fpath):
         "Native Forest",
         "Commercial Forest",
     ]
-    df_out = df_mgmt_decisions_long.melt(id_vars=id_vars, value_vars=value_vars)
+    value_vars = list(dicts.simplified_lulc_mapping.keys())
+
+    df_out = df_mgmt_decisions_long.melt(
+        id_vars=id_vars,
+        value_vars=value_vars,
+        var_name="lulc_category",
+        value_name="mgmt_decision",
+    )
 
     # clean select columns
     df_out.loc[:, "Plot"] = df_out.loc[:, "Plot"].fillna(0).astype("int8")
     df_out.loc[:, "Teamwork"] = (
         df_out.loc[:, "Teamwork"].fillna(False).astype("bool")
     )
+
+    # add id for lulc categories
+    df_out["lulc_category_id"] = [
+        dicts.simplified_lulc_mapping[k] for k in df_out["lulc_category"].values
+    ]
 
     return df_out
 
