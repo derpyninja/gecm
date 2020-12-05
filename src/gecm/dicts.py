@@ -77,9 +77,10 @@ stakeholder_property_dict = {
     130: [31, 32, 41, 42],
 }
 
+# https://colorbrewer2.org/#type=diverging&scheme=BrBG&n=5
 stakeholder_color_dict = {
-    100: "#fee090",
-    110: "#fdbf6f",
-    120: "#33a02c",
-    130: "#b2df8a",
+    100: "#a6611a",
+    110: "#dfc27d",
+    120: "#80cdc1",
+    130: "#018571",
 }

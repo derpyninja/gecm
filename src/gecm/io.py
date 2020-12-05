@@ -130,18 +130,18 @@ def parse_mgmt_decisions(
 
     # Concatenate and tidy management decisions
     df_all = pd.concat(sheet_dict.values(), keys=sheet_dict.keys())
-    df_all.index = df_all.index.set_names(["player", "round"])
+    df_all.index = df_all.index.set_names(["Player", "Round"])
     df_all = df_all.reset_index()
-    df_all["round"] = pd.to_numeric(
-        df_all["round"], errors="coerce", downcast="integer"
+    df_all["Round"] = pd.to_numeric(
+        df_all["Round"], errors="coerce", downcast="integer"
     )
 
     # Unstack data: based on
     # https://stackoverflow.com/questions/25386870/pandas-plotting-with-multi-index
-    df_final = df_all.set_index(["round", "player"]).sort_index()
+    df_final = df_all.set_index(["Round", "Player"]).sort_index()
 
     if unstack_data:
-        return df_final.unstack(level="player")
+        return df_final.unstack(level="Player")
     else:
         return df_final
 
@@ -217,22 +217,27 @@ def parse_all_mgmt_decisions(config_file, credentials_fpath):
         dict_of_mgmt_decisions_dfs.values(),
         keys=dict_of_mgmt_decisions_dfs.keys(),
     )
-    df_mgmt_decisions.index.rename("stakeholder", level=0, inplace=True)
+    df_mgmt_decisions.index.rename("Stakeholder", level=0, inplace=True)
     df_mgmt_decisions_long = df_mgmt_decisions.reset_index()
     df_mgmt_decisions_long["id"] = df_mgmt_decisions_long.index.values
 
-    # lower case column var names
-    df_mgmt_decisions_long.columns = df_mgmt_decisions_long.columns.str.lower()
+    # capitalize column var names
+    df_mgmt_decisions_long.columns = df_mgmt_decisions_long.columns.str.title()
 
     # melt data set
-    id_vars = ["stakeholder", "round", "player", "plot", "teamwork"]
-    value_vars = ["sheep", "cattle", "native forest", "commercial forest"]
+    id_vars = ["Stakeholder", "Round", "Player", "Plot", "Teamwork"]
+    value_vars = [
+        "Sheep Farming",
+        "Cattle Farming",
+        "Native Forest",
+        "Commercial Forest",
+    ]
     df_out = df_mgmt_decisions_long.melt(id_vars=id_vars, value_vars=value_vars)
 
     # clean select columns
-    df_out.loc[:, "plot"] = df_out.loc[:, "plot"].fillna(0).astype("int8")
-    df_out.loc[:, "teamwork"] = (
-        df_out.loc[:, "teamwork"].fillna(False).astype("bool")
+    df_out.loc[:, "Plot"] = df_out.loc[:, "Plot"].fillna(0).astype("int8")
+    df_out.loc[:, "Teamwork"] = (
+        df_out.loc[:, "Teamwork"].fillna(False).astype("bool")
     )
 
     return df_out

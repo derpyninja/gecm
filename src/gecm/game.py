@@ -98,11 +98,21 @@ class MatrixGame(object):
         self.credentials_fpath = credentials_fpath
 
         # colormap
-        self.cmap = cmap
+        # self.cmap = cmap
         self.cmap_str = "Paired"
         self.n_colors = None
-        self.cmap_hex = None
-        self.simplified_property_cm = ListedColormap(
+        self.cmap_lulc_hex = None
+
+        # map
+        self.cmap_lulc = ListedColormap(
+            [
+                dicts.simplified_lulc_mapping_colors[x]
+                for x in dicts.simplified_lulc_mapping_colors.keys()
+            ]
+        )
+
+        # stakeholders
+        self.cmap_stakeholders = ListedColormap(
             [
                 dicts.stakeholder_color_dict[x]
                 for x in dicts.stakeholder_color_dict.keys()
@@ -167,7 +177,7 @@ class MatrixGame(object):
             )
 
         # self._create_cmap(granularity=granularity)
-        self.cmap_hex = vis.cmap2hex(self.cmap)
+        self.cmap_lulc_hex = vis.cmap2hex(self.cmap_lulc)
 
     def fetch_mgmt_decisions(self):
         self.df_mgmt_decisions_long = io.parse_all_mgmt_decisions(
@@ -293,8 +303,8 @@ class MatrixGame(object):
             raise NotImplementedError
 
         self.n_colors = len(np.unique(raster)) - 1  # -1 for np.nan
-        self.cmap = plt.get_cmap(self.cmap_str, lut=self.n_colors)
-        self.cmap_hex = vis.cmap2hex(self.cmap)
+        self.cmap_lulc = plt.get_cmap(self.cmap_str, lut=self.n_colors)
+        self.cmap_lulc_hex = vis.cmap2hex(self.cmap_lulc)
         return None
 
     def _convert(self):
@@ -340,7 +350,7 @@ class MatrixGame(object):
             raster,
             ax=ax,
             transform=self.src.transform,
-            cmap=self.cmap,
+            cmap=self.cmap_lulc,
             contour=False,
         )
 
@@ -442,8 +452,7 @@ class MatrixGame(object):
         self, granularity=1, relative=False, figure_size=None, ax=None
     ):
         """
-        Create a barplot of the current distribution of areal
-        percentage for all LULC types.
+        Create a barplot of the current pixel distribution of all LULC types.
 
         Returns
         -------
@@ -471,7 +480,7 @@ class MatrixGame(object):
         classes = base.convert_lulc_id_to_class(
             int_array=unique[:-1], mapping=self.simplified_lulc_mapping
         )
-        ax.bar(x=classes, height=bar_width, color=self.cmap_hex)
+        ax.bar(x=classes, height=bar_width, color=self.cmap_lulc_hex)
         # ax.set_xlabel("Percent of total area (%)")
         return ax
 
@@ -483,7 +492,7 @@ class MatrixGame(object):
         relative=False,
     ):
         """
-        Displays the game dashboard by wrapping around the other plot functions.
+        Displays the game dashboard by wrapping the other plotting functions.
 
         Parameters
         ----------
@@ -513,7 +522,15 @@ class MatrixGame(object):
 
         # property rights
         if property_rights:
-            ax_map.imshow(self.property_rights_matrix, cmap="Blues", zorder=0)
+            rioplot.show(
+                self.property_rights_matrix,
+                ax=ax_map,
+                transform=self.src.transform,
+                cmap=self.cmap_stakeholders,
+                contour=False,
+                zorder=0,
+                alpha=0.6,
+            )
 
         # MAP
         self.show(granularity=granularity, ax=ax_map)
