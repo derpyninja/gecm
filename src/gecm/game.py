@@ -329,6 +329,158 @@ class MatrixGame(object):
                 arr[arr == j] = k
         self.property_rights_matrix = arr
 
+    def update_lulc_matrix_based_on_mgmt_decisions(self, current_round=None, seed=42):
+
+        # if map updating should always follow the same random process.
+        # if seed=None, it changes for each function call.
+        if seed is not None:
+            np.random.seed(seed)
+
+        # leaves us the freedom to explicitly choose a round,
+        # but defaults to using the class parameter value
+        if current_round is None:
+            current_round = self.current_round
+
+        # max pixels
+        n_pixels_per_block_max = self.n_pixels_per_block ** 2
+        n_pixels_max = self.n_pixels ** 2
+
+        # query relevant mgmt decisions of current round
+        mgmt_decisions_of_round = self.df_mgmt_decisions_long.query(
+            "Round == {current_round}".format(current_round=current_round))
+
+        # all blocks
+        blocks = self.block_definition_matrix_block_lvl.flatten()
+
+        # copy lulc_matrix data from the matrix stack
+        mar_field_2d = self.lulc_matrix_stack[:, :,
+                       self.current_round - 1].copy()
+        mar_field_1d = mar_field_2d.flatten()
+
+        # iterate over blocks where lulc should be updated based on mgmt decision
+        # ------------------------------------------------------------------------
+        for block in blocks:
+            # print("  Management Block: {}".format(block))
+
+            # copy mar_field in each block iteration
+            mar = mar_field_2d.copy()
+
+            # query relevant mgmt decisions of current round
+            # TODO: find tailored solution for SSDA
+            mgmt_decisions_of_round_and_block = mgmt_decisions_of_round.query(
+                "Plot == {block} & Player != 'SSDA'".format(block=block))
+
+            # continue to next block in case no mgmt decision has been made
+            if mgmt_decisions_of_round_and_block.empty:
+                continue
+            else:
+
+                # create a boolean mask which is True over the pixels of the particular block
+                mgmt_mask = self.block_definition_matrix_pixel_lvl == block
+
+                # update the mask of the lulc_matrix based on the block mask
+                mar[~mgmt_mask] = np.ma.masked
+
+                # calculate number of counts per lulc category
+                unique, counts = np.unique(mar, return_counts=True)
+
+                # infer number of unmasked px of block (this is where the we can actually update the lulc as I don't let them expand any areas outside of the biosphere)
+                n_pixels_unmasked, n_pixels_masked_total = counts[:-1], counts[
+                    -1]
+                n_pixels_unmasked_in_block = n_pixels_max - n_pixels_masked_total
+                lulc_types_unmasked = unique[unique.mask == False].data
+                block_lulc_distribution = dict(
+                    zip(lulc_types_unmasked, n_pixels_unmasked))
+
+                # create index matrix
+                mar_ix_1d = np.arange(mar.ravel().size)
+                mar_ix_1d_masked = np.ma.masked_array(mar_ix_1d, mask=mar.mask)
+                mar_ix_2d_masked = mar_ix_1d_masked.reshape(
+                    self.n_pixels, self.n_pixels)
+
+                # iterate through the lulc types
+                for group_id, group_data in mgmt_decisions_of_round_and_block.groupby(
+                        "Player"):
+                    # ------------------------------------------------
+                    # Farmers Decisions
+                    # ------------------------------------------------
+
+                    # 1) conversion to cattle farming
+                    cattle_farming_conversion_decision = \
+                    group_data[group_data["lulc_category_id"] == 4].loc[:,
+                    "mgmt_decision"].values[0]
+                    if np.isclose(cattle_farming_conversion_decision,
+                                  0) or np.isnan(
+                            cattle_farming_conversion_decision):
+                        print("{}: no conversion to cattle farming".format(
+                            group_id))
+                    else:
+                        # TODO
+                        pass
+
+                    # 2) conversion from sheep farming to native forest
+                    # TODO
+
+                    # ------------------------------------------------
+                    # Foresters Decisions
+                    # ------------------------------------------------
+
+                    # 1) conversion from native forest to commercial forest
+                    native_forest_conversion_decision = \
+                    group_data[group_data["lulc_category_id"] == 2].loc[:,
+                    "mgmt_decision"].values[0]
+                    if np.isclose(native_forest_conversion_decision,
+                                  0) or np.isnan(
+                            native_forest_conversion_decision):
+                        print("{}: no conversion between forest types".format(
+                            group_id))
+                    else:
+                        # TODO
+                        print("{}: converting between forest types".format(
+                            group_id))
+                        # ------------------------------------------------
+                        # update lulc matrix in block via random sampling of array elements without replacement
+                        # ------------------------------------------------
+
+                        # determine which forest category to convert to
+                        if native_forest_conversion_decision > 0:
+                            convert_forest_to = 2
+                        elif native_forest_conversion_decision < 0:
+                            convert_forest_to = 3
+                        else:
+                            # TODO: check
+                            continue
+
+                        # random draw among those indices that are within the block and playing field (:
+                        ix_sel_for_draw = mar_ix_1d_masked[
+                            mar_ix_1d_masked.mask == False]
+                        random_ix_1d = np.random.choice(a=ix_sel_for_draw,
+                                                        size=int(np.abs(
+                                                            native_forest_conversion_decision)),
+                                                        replace=False)
+
+                        # update 1d copy of field lulc matrix within block at drawn indices
+                        mar_field_1d[random_ix_1d] = convert_forest_to
+
+            # reshape 1d mar back to 2d
+            mar_field_2d_updated = mar_field_1d.reshape(self.n_pixels,
+                                                        self.n_pixels)
+            mar_field_3d_updated = mar_field_2d_updated.reshape(
+                mar_field_2d_updated.shape[0], mar_field_2d_updated.shape[1], 1)
+
+            # ------------------------------------------------
+            # plot the updated block after the block iteration is done
+            # ------------------------------------------------
+            # plt.imshow(mar, cmap=self.cmap_lulc)
+            # plt.imshow(mar_field_2d_updated, cmap=self.cmap_lulc, alpha=1)
+            # plt.imshow(mar_ix_2d_masked, alpha=0.5)
+
+        # --------------------------------------------------------
+        # lastly: add new lulc map to lulc_matrix_stack! WORKS :D
+        # --------------------------------------------------------
+        self.lulc_matrix_stack = np.ma.append(
+            a=self.lulc_matrix_stack, b=mar_field_3d_updated, axis=2)
+
     def show(self, granularity=1, figure_size=None, ax=None):
         """
         Create a spatial plot of the map.
