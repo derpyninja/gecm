@@ -72,7 +72,7 @@ def show_all_mgmt_decisions(df_mgmt_decisions_long):
         g.set_axis_labels("Round", "Management Decision (%)")
         # .set_xticklabels(["round", "round", "round"])
         # .set_titles("{col_name} {col_var}")
-        .set(ylim=(-55, 55)).despine(left=False)
+        .set(ylim=(-100, 100)).despine(left=False)
     )
 
     return g

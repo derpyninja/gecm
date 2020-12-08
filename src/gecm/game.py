@@ -102,11 +102,19 @@ class MatrixGame(object):
         self.n_colors = None
         self.cmap_lulc_hex = None
 
-        # map
+        # map w/o cattle on the field
+        self.cmap_lulc_no_cattle = ListedColormap(
+            [
+                dicts.simplified_lulc_mapping_colors[x]
+                for x in list(dicts.simplified_lulc_mapping_colors.keys())[:-1]
+            ]
+        )
+
+        # map with cattle on the field
         self.cmap_lulc = ListedColormap(
             [
                 dicts.simplified_lulc_mapping_colors[x]
-                for x in dicts.simplified_lulc_mapping_colors.keys()
+                for x in list(dicts.simplified_lulc_mapping_colors.keys())
             ]
         )
 
@@ -333,7 +341,8 @@ class MatrixGame(object):
         self, current_round=None, seed=42
     ):
 
-        # TODO [low]: clean up and simplify. the code is really messy.
+        # TODO [some time in the new year]:
+        #  clean up and simplify, the code is really messy as of now
 
         # if map updating should always follow the same random process.
         # if seed=None, it changes for each function call.
@@ -424,7 +433,7 @@ class MatrixGame(object):
                 ) in mgmt_decisions_of_round_and_block.groupby("Player"):
 
                     # ------------------------------------------------
-                    # Farmers Decisions
+                    # 1) Farmers Decisions
                     # ------------------------------------------------
                     print(group_id)
 
@@ -440,14 +449,15 @@ class MatrixGame(object):
                         cattle_farming_conversion_decision * -1
                     )
 
-                    # TODO: decision on native forest owned by farmers
+                    # farmer's decicions on native forest are evaluated only
+                    # after the farming type conversions (if any)
                     native_forest_farmer_decision = (
                         group_data[group_data["lulc_category_id"] == 2]
                         .loc[:, "mgmt_decision"]
                         .values[0]
                     )
 
-                    # check if action for farming type conversion is needed
+                    # A) check if action for farming type conversion is needed
                     # ------------------------------------------------
                     if np.isclose(
                         cattle_farming_conversion_decision, 0
@@ -460,10 +470,6 @@ class MatrixGame(object):
 
                         # update lulc matrix in block via random sampling
                         # of array elements without replacement
-
-                        # ------------------------------------------------
-                        # determine what should be converted to what.
-                        # ------------------------------------------------
 
                         # case 1: convert from sheep to cattle
                         if cattle_farming_conversion_decision > 0:
@@ -488,7 +494,6 @@ class MatrixGame(object):
                         )
 
                         # respect an upper limit on the maximum sample size
-                        print(sample_size, n_pixels_unmasked_in_block)
                         if sample_size > n_pixels_unmasked_in_block:
                             sample_size = n_pixels_unmasked_in_block
 
@@ -503,11 +508,60 @@ class MatrixGame(object):
                         # block at drawn indices
                         mar_field_1d[random_ix_1d] = convert_to
 
+                    # B) check if action for conversion to more native
+                    # forest is needed
                     # ------------------------------------------------
-                    # Foresters Decisions
+                    """
+                    if np.isclose(
+                            native_forest_farmer_decision, 0
+                    ) or np.isnan(native_forest_farmer_decision) or native_forest_farmer_decision < 0:
+                        # no action
+                        print("{}: no native forest conversion".format(
+                            group_id))
+                    else:
+                        # action
+                        print(
+                            "{}: native forest conversion".format(group_id))
+
+                        # update lulc matrix in block via random sampling
+                        # of array elements without replacement
+                        # ------------------------------------------------
+
+                        # case 3: plant native forest, via random assignment of
+                        # possibly all of sheep, cattle and native forest
+                        convert_to = 2
+
+                        # random draw among those indices that are within
+                        # the block and playing field
+
+                        sample_size = int(
+                            np.abs(native_forest_farmer_decision)
+                        )
+
+                        # respect an upper limit on the maximum sample size
+                        print(sample_size, n_pixels_unmasked_in_block)
+                        if sample_size > n_pixels_unmasked_in_block:
+                            sample_size = n_pixels_unmasked_in_block
+
+                        ix_sel_for_draw = mar_ix_1d_masked[
+                            mar_ix_1d_masked.mask == False
+                            ]
+                        random_ix_1d = np.random.choice(
+                            a=ix_sel_for_draw, size=sample_size,
+                            replace=False
+                        )
+
+                        # update 1d copy of field lulc matrix within
+                        # block at drawn indices
+                        mar_field_1d[random_ix_1d] = convert_to
+                    """
+
+                    # ------------------------------------------------
+                    # 2) Foresters Decisions
                     # ------------------------------------------------
 
-                    # 1) conversion from native forest to commercial forest
+                    # A) conversion from native forest to commercial forest
+                    # ------------------------------------------------
                     native_forest_conversion_decision = (
                         group_data[group_data["lulc_category_id"] == 2]
                         .loc[:, "mgmt_decision"]
@@ -522,7 +576,6 @@ class MatrixGame(object):
                             )
                         )
                     else:
-                        # TODO
                         print(
                             "{}: converting between forest types".format(
                                 group_id
@@ -549,7 +602,6 @@ class MatrixGame(object):
                         )
 
                         # adjust sample size based on boundary conditions
-                        print(sample_size, n_pixels_unmasked_in_block)
                         if sample_size > n_pixels_unmasked_in_block:
                             sample_size = n_pixels_unmasked_in_block
 
@@ -593,7 +645,7 @@ class MatrixGame(object):
                 "the Mgmt Decision is missing. Check all sheets!".format(msg)
             )
 
-    def show(self, granularity=1, figure_size=None, ax=None):
+    def show(self, granularity=1, figure_size=None, ax=None, cattle=False):
         """
         Create a spatial plot of the map.
 
@@ -616,7 +668,7 @@ class MatrixGame(object):
             raster,
             ax=ax,
             transform=self.src.transform,
-            cmap=self.cmap_lulc,
+            cmap=self.cmap_lulc if cattle is True else self.cmap_lulc_no_cattle,
             contour=False,
         )
 
@@ -712,6 +764,20 @@ class MatrixGame(object):
         ax.set_xticklabels(labels=x_tick_labels, minor=False)
         ax.set_yticklabels(labels=y_tick_labels[::-1], minor=False)
 
+        # display quadrant property
+        for name, pos in dicts.stakeholder_name_pos_dict.items():
+            ax.text(
+                x=pos[0],
+                y=pos[1],
+                s=name,
+                horizontalalignment='center',
+                verticalalignment='center',
+                transform=ax.transAxes,
+                color="black",
+                fontsize=14,
+                bbox=dict(facecolor='white', alpha=0.7)
+            )
+
         return ax
 
     def show_bar(
@@ -743,12 +809,16 @@ class MatrixGame(object):
         if ax is None:
             _, ax = plt.subplots(figsize=figure_size)
 
+        # strip class names
         classes = base.convert_lulc_id_to_class(
             int_array=unique[:-1], mapping=self.simplified_lulc_mapping
         )
-        ax.bar(x=classes, height=bar_width, color=self.cmap_lulc_hex)
+        classes_short = [class_name.split(" ")[0] for class_name in classes]
+
+        # plot
+        ax.bar(x=classes_short, height=bar_width, color=self.cmap_lulc_hex)
         ax.grid(which="major", axis="y", linestyle="--")
-        # ax.set_xlabel("Percent of total area (%)")
+
         return ax
 
     def show_dashboard(
@@ -757,6 +827,7 @@ class MatrixGame(object):
         figure_size=None,
         property_rights=False,
         relative=False,
+        cattle=False
     ):
         """
         Displays the game dashboard by wrapping the other plotting functions.
@@ -800,7 +871,7 @@ class MatrixGame(object):
             )
 
         # MAP
-        self.show(granularity=granularity, ax=ax_map)
+        self.show(granularity=granularity, ax=ax_map, cattle=cattle)
 
         # PROPERTY
         self.show_bar(granularity=granularity, relative=relative, ax=ax_bar)
