@@ -6,9 +6,7 @@ import rasterio.plot as rioplot
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.colors import ListedColormap
-
-
-from src.gecm import io, vis, base, dicts
+from src.gecm import io, model, vis, base, dicts
 
 
 class MatrixGame(object):
@@ -43,6 +41,10 @@ class MatrixGame(object):
             care of making the cm really fit with the underlying data.
         """
         self.fpath = fpath
+
+        # game choices
+        # TODO: move to config
+        self.brexit_round = 3
 
         # initialise the zeroth' round of the game
         self.current_round = 0
@@ -131,6 +133,95 @@ class MatrixGame(object):
         self.model_param_dict = model_param_dict
         self.model_calc_dict = model_calc_dict
 
+        # initialise main conceptual model data store as a nested dictionary
+        # ---------------------------------------------------------------------
+        self.data_store = {
+            # variable model parameters (changing per round)
+            "variable_model_params": {
+                "teamwork": [
+                    False
+                ],  # True/False for each game round, defaults to False for rounds 0, 1 and 2
+                "area_sheep_total": [],
+                "area_n_forest_total": [],
+                "area_c_forest_total": [],
+                "area_cattle_total": [0],
+                "sheep_price": [self.model_param_dict["income_farmland_sheep"]],
+                "cattle_price": [
+                    self.model_param_dict["income_farmland_cattle"]
+                ],
+                "c_forest_price": [
+                    self.model_param_dict["income_forest_native"]
+                ],
+                "n_forest_price": [
+                    self.model_param_dict["income_forest_commercial"]
+                ],
+            },
+            "Farmer_1": {
+                # to be updated after calculating money_farmer and money_forester (!)
+                "income": [self.model_param_dict["gdp_average"]],
+                # to be updated after calculating money_farmer and money_forester (!)
+                "bank_account": [
+                    self.model_param_dict["bank_account_farmer_1"]
+                ],
+                # to be updated after calculating unemployment_rate after money_farmer and money_forester (!)
+                "unemployment": [self.model_param_dict["unempl_rate_scotland"]],
+                "area_sheep": [],  # to be updated a bit later
+                "area_cattle": [0],  # to be updated a bit later
+                "area_c_forest": [],  # to be updated a bit later
+                "area_n_forest": [],  # to be updated a bit later
+            },
+            "Farmer_2": {
+                # to be updated after calculating money_farmer and money_forester (!)
+                "income": [self.model_param_dict["gdp_average"]],
+                # to be updated after calculating money_farmer and money_forester (!)
+                "bank_account": [
+                    self.model_param_dict["bank_account_farmer_2"]
+                ],
+                # to be updated after calculating unemployment_rate after money_farmer and money_forester (!)
+                "unemployment": [self.model_param_dict["unempl_rate_scotland"]],
+                "area_sheep": [],  # to be updated a bit later
+                "area_cattle": [0],  # to be updated a bit later
+                "area_c_forest": [],  # to be updated a bit later
+                "area_n_forest": [],  # to be updated a bit later
+            },
+            "Forester_1": {
+                # to be updated after calculating money_farmer and money_forester (!)
+                "income": [self.model_param_dict["gdp_average"]],
+                # to be updated after calculating money_farmer and money_forester (!)
+                "bank_account": [
+                    self.model_param_dict["bank_account_forestry_1"]
+                ],
+                # to be updated after calculating unemployment_rate after money_farmer and money_forester (!)
+                "unemployment": [self.model_param_dict["unempl_rate_scotland"]],
+                "area_sheep": [],  # to be updated a bit later
+                "area_cattle": [0],  # to be updated a bit later
+                "area_c_forest": [],  # to be updated a bit later
+                "area_n_forest": [],  # to be updated a bit later
+            },
+            "Forester_2": {
+                # to be updated after calculating money_farmer and money_forester (!)
+                "income": [self.model_param_dict["gdp_average"]],
+                # to be updated after calculating money_farmer and money_forester (!)
+                "bank_account": [
+                    self.model_param_dict["bank_account_forestry_2"]
+                ],
+                # to be updated after calculating unemployment_rate after money_farmer and money_forester (!)
+                "unemployment": [self.model_param_dict["unempl_rate_scotland"]],
+                "area_sheep": [],  # to be updated a bit later
+                "area_cattle": [0],  # to be updated a bit later
+                "area_c_forest": [],  # to be updated a bit later
+                "area_n_forest": [],  # to be updated a bit later
+            },
+            "SSDA": {
+                # True/False for each game round, defaults to False for rounds 0, 1 and 2
+                "ssda_block_choice": [None],
+                # TODO: move to params
+                "tourist_number": [4800],
+                # TODO: move to params
+                "tourist_factor": [1],
+            },
+        }
+
     def initialise(self, masked=True, granularity=1):
         """
         Initialise map.
@@ -185,6 +276,52 @@ class MatrixGame(object):
 
         # self._create_cmap(granularity=granularity)
         self.cmap_lulc_hex = vis.cmap2hex(self.cmap_lulc)
+
+        # populate stakeholder-unspecific data stores
+        unique_global, counts_global = np.unique(
+            self.lulc_matrix_stack[:, :, 0], return_counts=True
+        )
+        d_unique_counts_global = dict(
+            zip(unique_global[:-1], counts_global[:-1])
+        )
+        self.data_store["variable_model_params"]["area_sheep_total"].append(
+            d_unique_counts_global[1]
+        )
+        self.data_store["variable_model_params"]["area_n_forest_total"].append(
+            d_unique_counts_global[2]
+        )
+        self.data_store["variable_model_params"]["area_c_forest_total"].append(
+            d_unique_counts_global[3]
+        )
+
+        # iteratively populate the stakeholder-specific data stores
+        # TODO [low]: ultimatively remove hard-coding in the following sequence
+        for (
+            stakeholder_name,
+            stakeholder_id,
+        ) in dicts.stakeholder_id_dict.items():
+            if stakeholder_name == "SSDA":
+                continue
+
+            # select data of property that stakeholder owns
+            lulc_data_sel = self.lulc_matrix_stack[:, :, 0][
+                self.property_rights_matrix == stakeholder_id
+            ]
+
+            # get unique value counts
+            unique, counts = np.unique(lulc_data_sel, return_counts=True)
+            d_unique_counts = dict(zip(unique[:-1], counts[:-1]))
+
+            # init relevant data store parts
+            self.data_store[stakeholder_name]["area_sheep"].append(
+                d_unique_counts[1]
+            )
+            self.data_store[stakeholder_name]["area_n_forest"].append(
+                d_unique_counts[2]
+            )
+            self.data_store[stakeholder_name]["area_c_forest"].append(
+                d_unique_counts[3]
+            )
 
     def fetch_mgmt_decisions(self):
         self.df_mgmt_decisions_long = io.parse_all_mgmt_decisions(
@@ -644,6 +781,124 @@ class MatrixGame(object):
                 "-> Very likely, either the Plot Number or "
                 "the Mgmt Decision is missing. Check all sheets!".format(msg)
             )
+
+    def update_data_store(
+        self, current_round=None, teamwork=None, ssda_choice=None
+    ):
+        # update income, unemployment, prices etc
+
+        # leaves us the freedom to explicitly choose a round if needed
+        if current_round is None:
+            current_round = self.current_round
+
+        # leaves us the freedom to explicitly choose if needed
+        if teamwork is None:
+            teamwork = model.teamwork(self.cooperation_matrix_block_lvl)
+
+        # update stakeholder-unspecific area totals
+        unique_global, counts_global = np.unique(
+            self.lulc_matrix_stack[:, :, self.current_round], return_counts=True
+        )
+
+        d_unique_counts_global = dict(
+            zip(unique_global[:-1], counts_global[:-1])
+        )
+
+        self.data_store["variable_model_params"]["area_sheep_total"].append(
+            d_unique_counts_global[1]
+        )
+        self.data_store["variable_model_params"]["area_n_forest_total"].append(
+            d_unique_counts_global[2]
+        )
+        self.data_store["variable_model_params"]["area_c_forest_total"].append(
+            d_unique_counts_global[3]
+        )
+        self.data_store["variable_model_params"]["area_cattle_total"].append(
+            d_unique_counts_global[4]
+        )
+
+        # teamwork update
+        self.data_store["variable_model_params"]["teamwork"].append(teamwork)
+
+        # Tourism update
+        if ssda_choice is not None:
+            tourism_mask = self.block_definition_matrix_pixel_lvl == ssda_choice
+
+            # copy lulc_matrix data from stack
+            mar = self.lulc_matrix_stack[:, :, self.current_round - 1].copy()
+
+            # update the mask of the lulc_matrix based on the block mask
+            mar[~tourism_mask] = np.ma.masked
+
+            # calc
+            number_tourists, tourism_factor = model.tourism_factor(
+                tourism_factor_matrix=mar,
+                gdp_tourism_factor=40,  # TODO: removing hard-coding needed?
+            )
+
+            # update lists
+            self.data_store["SSDA"]["tourist_number"].append(number_tourists)
+            self.data_store["SSDA"]["tourist_factor"].append(tourism_factor)
+
+        # global update, independent of choice
+        self.data_store["SSDA"]["ssda_block_choice"].append(ssda_choice)
+
+        # Price update
+        # ---------------------------------------------------------------------
+        # yield in round 0
+        _, tot_sheep, _, _ = model.yield_map(self.lulc_matrix_stack[:, :, 0])
+
+        # yield in this round
+        tot_cattle, _, tot_n_forest, tot_c_forest = model.yield_map(
+            self.lulc_matrix_stack[:, :, self.current_round]
+        )
+
+        # calculate prices
+        (
+            cattle_price_new,
+            sheep_price_new,
+            n_forest_price_new,
+            c_forest_price_new,
+        ) = model.price_per_pixel(
+            current_round=self.current_round,
+            brexit=self.brexit_round,
+            tot_sheep_0=self.data_store["variable_model_params"][
+                "area_sheep_total"
+            ][0],
+            tot_cattle=self.data_store["variable_model_params"][
+                "area_cattle_total"
+            ][self.current_round],
+            tot_n_forest=self.data_store["variable_model_params"][
+                "area_n_forest_total"
+            ][self.current_round],
+            tot_c_forest=self.data_store["variable_model_params"][
+                "area_c_forest_total"
+            ][self.current_round],
+            income_farmland_cattle=self.model_param_dict[
+                "income_farmland_cattle"
+            ],
+            income_farmland_sheep=self.model_param_dict[
+                "income_farmland_sheep"
+            ],
+            income_forest_native=self.model_param_dict["income_forest_native"],
+            income_forest_commercial=self.model_param_dict[
+                "income_forest_commercial"
+            ],
+        )
+
+        # update prices
+        self.data_store["variable_model_params"]["cattle_price"].append(
+            cattle_price_new
+        )
+        self.data_store["variable_model_params"]["sheep_price"].append(
+            sheep_price_new
+        )
+        self.data_store["variable_model_params"]["n_forest_price"].append(
+            n_forest_price_new
+        )
+        self.data_store["variable_model_params"]["c_forest_price"].append(
+            c_forest_price_new
+        )
 
     def show(self, granularity=1, figure_size=None, ax=None, cattle=False):
         """
