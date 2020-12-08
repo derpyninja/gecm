@@ -770,12 +770,12 @@ class MatrixGame(object):
                 x=pos[0],
                 y=pos[1],
                 s=name,
-                horizontalalignment='center',
-                verticalalignment='center',
+                horizontalalignment="center",
+                verticalalignment="center",
                 transform=ax.transAxes,
                 color="black",
                 fontsize=14,
-                bbox=dict(facecolor='white', alpha=0.7)
+                bbox=dict(facecolor="white", alpha=0.7),
             )
 
         return ax
@@ -827,7 +827,7 @@ class MatrixGame(object):
         figure_size=None,
         property_rights=False,
         relative=False,
-        cattle=False
+        cattle=False,
     ):
         """
         Displays the game dashboard by wrapping the other plotting functions.

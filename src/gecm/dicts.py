@@ -60,7 +60,7 @@ simplified_lulc_mapping_colors = {
     1: "#fee090",
     2: "#33a02c",
     3: "#b2df8a",
-    4: "#fdbf6f"
+    4: "#fdbf6f",
 }
 
 stakeholder_id_dict = {
@@ -94,5 +94,5 @@ stakeholder_name_pos_dict = {
     "Farmer 1": (x_margin, 1 - y_margin),
     "Forester 1": (1 - x_margin, 1 - y_margin),
     "Forester 2": (x_margin, y_margin),
-    "Farmer 2": (1 - x_margin, y_margin)
+    "Farmer 2": (1 - x_margin, y_margin),
 }
