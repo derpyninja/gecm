@@ -44,7 +44,9 @@ class MatrixGame(object):
 
         # game choices
         # TODO: move to config
-        self.brexit_round = 3
+        self.brexit_round = 4
+        self.teamwork_round = 1
+        self.players = list(dicts.stakeholder_id_dict.keys())
 
         # initialise the zeroth' round of the game
         self.current_round = 0
@@ -513,7 +515,6 @@ class MatrixGame(object):
         # updated based on mgmt decision
         # ---------------------------------------------------
         for block in blocks:
-            # print("  Management Block: {}".format(block))
 
             # copy mar_field in each block iteration
             mar = mar_field_2d.copy()
@@ -572,7 +573,6 @@ class MatrixGame(object):
                     # ------------------------------------------------
                     # 1) Farmers Decisions
                     # ------------------------------------------------
-                    print(group_id)
 
                     # decision on cattle
                     cattle_farming_conversion_decision = (
@@ -600,10 +600,9 @@ class MatrixGame(object):
                         cattle_farming_conversion_decision, 0
                     ) or np.isnan(cattle_farming_conversion_decision):
                         # no action
-                        print("{}: no farming type conversion".format(group_id))
+                        pass
                     else:
                         # action
-                        print("{}: farming type conversion".format(group_id))
 
                         # update lulc matrix in block via random sampling
                         # of array elements without replacement
@@ -648,17 +647,17 @@ class MatrixGame(object):
                     # B) check if action for conversion to more native
                     # forest is needed
                     # ------------------------------------------------
-                    """
-                    if np.isclose(
-                            native_forest_farmer_decision, 0
-                    ) or np.isnan(native_forest_farmer_decision) or native_forest_farmer_decision < 0:
+
+                    # TODO: comment out if crashing
+                    if (
+                        np.isclose(native_forest_farmer_decision, 0)
+                        or np.isnan(native_forest_farmer_decision)
+                        or native_forest_farmer_decision < 0
+                    ):
                         # no action
-                        print("{}: no native forest conversion".format(
-                            group_id))
+                        pass
                     else:
                         # action
-                        print(
-                            "{}: native forest conversion".format(group_id))
 
                         # update lulc matrix in block via random sampling
                         # of array elements without replacement
@@ -671,27 +670,22 @@ class MatrixGame(object):
                         # random draw among those indices that are within
                         # the block and playing field
 
-                        sample_size = int(
-                            np.abs(native_forest_farmer_decision)
-                        )
+                        sample_size = int(np.abs(native_forest_farmer_decision))
 
                         # respect an upper limit on the maximum sample size
-                        print(sample_size, n_pixels_unmasked_in_block)
                         if sample_size > n_pixels_unmasked_in_block:
                             sample_size = n_pixels_unmasked_in_block
 
                         ix_sel_for_draw = mar_ix_1d_masked[
                             mar_ix_1d_masked.mask == False
-                            ]
+                        ]
                         random_ix_1d = np.random.choice(
-                            a=ix_sel_for_draw, size=sample_size,
-                            replace=False
+                            a=ix_sel_for_draw, size=sample_size, replace=False
                         )
 
                         # update 1d copy of field lulc matrix within
                         # block at drawn indices
                         mar_field_1d[random_ix_1d] = convert_to
-                    """
 
                     # ------------------------------------------------
                     # 2) Foresters Decisions
@@ -707,17 +701,8 @@ class MatrixGame(object):
                     if np.isclose(
                         native_forest_conversion_decision, 0
                     ) or np.isnan(native_forest_conversion_decision):
-                        print(
-                            "{}: no conversion between forest types".format(
-                                group_id
-                            )
-                        )
+                        pass
                     else:
-                        print(
-                            "{}: converting between forest types".format(
-                                group_id
-                            )
-                        )
 
                         # update lulc matrix in block via random sampling
                         # of array elements without replacement
@@ -795,7 +780,9 @@ class MatrixGame(object):
         if teamwork is None:
             teamwork = model.teamwork(self.cooperation_matrix_block_lvl)
 
+        # ---------------------------------------------------------------------
         # update stakeholder-unspecific area totals
+        # ---------------------------------------------------------------------
         unique_global, counts_global = np.unique(
             self.lulc_matrix_stack[:, :, self.current_round], return_counts=True
         )
@@ -817,10 +804,66 @@ class MatrixGame(object):
             d_unique_counts_global[4]
         )
 
+        # ---------------------------------------------------------------------
+        # update stakeholder-specific area totals
+        # ---------------------------------------------------------------------
+
+        # iteratively populate the stakeholder-specific data stores
+        # TODO [low]: ultimatively remove hard-coding in the following sequence
+        for (
+            stakeholder_name,
+            stakeholder_id,
+        ) in dicts.stakeholder_id_dict.items():
+            if stakeholder_name == "SSDA":
+                continue
+
+            # select data of property that stakeholder owns
+            lulc_data_sel = self.lulc_matrix_stack[:, :, self.current_round][
+                self.property_rights_matrix == stakeholder_id
+            ]
+
+            # get unique value counts
+            unique, counts = np.unique(lulc_data_sel, return_counts=True)
+            d_unique_counts = dict(zip(unique[:-1], counts[:-1]))
+
+            # init relevant data store parts
+            try:
+                self.data_store[stakeholder_name]["area_sheep"].append(
+                    d_unique_counts[1]
+                )
+            except KeyError as msg:
+                print(msg)
+                continue
+            try:
+                self.data_store[stakeholder_name]["area_n_forest"].append(
+                    d_unique_counts[2]
+                )
+            except KeyError as msg:
+                print(msg)
+                continue
+            try:
+                self.data_store[stakeholder_name]["area_c_forest"].append(
+                    d_unique_counts[3]
+                )
+            except KeyError as msg:
+                print(msg)
+                continue
+            try:
+                self.data_store[stakeholder_name]["area_cattle"].append(
+                    d_unique_counts[4]
+                )
+            except KeyError as msg:
+                print(msg)
+                continue
+
+        # ---------------------------------------------------------------------
         # teamwork update
+        # ---------------------------------------------------------------------
         self.data_store["variable_model_params"]["teamwork"].append(teamwork)
 
+        # ---------------------------------------------------------------------
         # Tourism update
+        # ---------------------------------------------------------------------
         if ssda_choice is not None:
             tourism_mask = self.block_definition_matrix_pixel_lvl == ssda_choice
 
@@ -843,6 +886,7 @@ class MatrixGame(object):
         # global update, independent of choice
         self.data_store["SSDA"]["ssda_block_choice"].append(ssda_choice)
 
+        # ---------------------------------------------------------------------
         # Price update
         # ---------------------------------------------------------------------
         # yield in round 0
@@ -899,6 +943,121 @@ class MatrixGame(object):
         self.data_store["variable_model_params"]["c_forest_price"].append(
             c_forest_price_new
         )
+
+        # ---------------------------------------------------------------------
+        # Income update
+        # ---------------------------------------------------------------------
+
+        # Farmers
+        # ---------------------------------------------------------------------
+        for farmer_player in ["Farmer_1", "Farmer_2"]:
+            farmer_earning, farmer_bank_current = model.money_farmer(
+                current_round=self.current_round,
+                tourism_factor=self.data_store["SSDA"]["tourist_factor"][
+                    self.current_round
+                ],
+                teams=self.teamwork_round,  # fixed
+                brexit=self.brexit_round,
+                teamwork=self.data_store["variable_model_params"]["teamwork"][
+                    self.current_round
+                ],
+                area_sheep=self.data_store[farmer_player]["area_sheep"],
+                area_cattle=self.data_store[farmer_player]["area_cattle"],
+                area_c_forest=self.data_store[farmer_player]["area_c_forest"],
+                area_n_forest=self.data_store[farmer_player]["area_n_forest"],
+                sheep_price=self.data_store["variable_model_params"][
+                    "sheep_price"
+                ],
+                cattle_price=self.data_store["variable_model_params"][
+                    "cattle_price"
+                ],
+                n_forest_price=self.data_store["variable_model_params"][
+                    "n_forest_price"
+                ],
+                c_forest_price=self.data_store["variable_model_params"][
+                    "c_forest_price"
+                ],
+                bank_account_farmer_1=self.data_store[farmer_player][
+                    "bank_account"
+                ][0],
+                # bank account shared in round 0
+                bank=self.data_store[farmer_player]["bank_account"][
+                    self.current_round - 1
+                ],
+                # state of bank account in last round
+                gdp_pc_scotland=self.model_param_dict["gdp_average"],
+            )
+
+            # update data store
+            self.data_store[farmer_player]["income"].append(farmer_earning)
+            self.data_store[farmer_player]["bank_account"].append(
+                farmer_bank_current
+            )
+
+        # Foresters
+        # ---------------------------------------------------------------------
+        for forester_player in ["Forester_1", "Forester_2"]:
+            forester_earning, forester_bank_current = model.money_forester(
+                current_round=self.current_round,
+                tourism_factor=self.data_store["SSDA"]["tourist_factor"][
+                    self.current_round
+                ],
+                teams=self.teamwork_round,  # fixed
+                brexit=self.brexit_round,
+                teamwork=self.data_store["variable_model_params"]["teamwork"][
+                    self.current_round
+                ],
+                area_sheep=self.data_store[forester_player]["area_sheep"],
+                area_c_forest=self.data_store[forester_player]["area_c_forest"],
+                area_n_forest=self.data_store[forester_player]["area_n_forest"],
+                sheep_price=self.data_store["variable_model_params"][
+                    "sheep_price"
+                ],
+                n_forest_price=self.data_store["variable_model_params"][
+                    "n_forest_price"
+                ],
+                c_forest_price=self.data_store["variable_model_params"][
+                    "c_forest_price"
+                ],
+                bank_account_forestry_1=self.data_store[forester_player][
+                    "bank_account"
+                ][0],
+                # bank account shared in round 0
+                bank=self.data_store[forester_player]["bank_account"][
+                    self.current_round - 1
+                ],
+                # state of bank account in last round
+                gdp_pc_scotland=self.model_param_dict["gdp_average"],
+            )
+
+            # update data store
+            self.data_store[forester_player]["income"].append(forester_earning)
+            self.data_store[forester_player]["bank_account"].append(
+                forester_bank_current
+            )
+
+        # ---------------------------------------------------------------------
+        # Unemployment update
+        # ---------------------------------------------------------------------
+        # IMPORTANT: Martina's code: **Earning = Income** !!!
+        #
+        # - new earning should be added to **income** lists
+        # - new bank account status should be added to **bank_account** lists
+        # ---------------------------------------------------------------------
+        for player in ["Farmer_1", "Farmer_2", "Forester_1", "Forester_2"]:
+            new_unemployment = model.unemployment_rate(
+                earning=self.data_store[player]["income"][
+                    self.current_round - 1
+                ],
+                earning_new=self.data_store[player]["income"][
+                    self.current_round
+                ],
+                unemployment=self.data_store[player]["unemployment"][
+                    self.current_round - 1
+                ],
+            )
+            # update data store
+            self.data_store[player]["unemployment"].append(new_unemployment)
 
     def show(self, granularity=1, figure_size=None, ax=None, cattle=False):
         """
@@ -1131,39 +1290,76 @@ class MatrixGame(object):
         # PROPERTY
         self.show_bar(granularity=granularity, relative=relative, ax=ax_bar)
 
-        # GDP
-        # TODO: create function based on the code below later on
-        df_model_params = pd.DataFrame(self.model_param_dict, index=["value"]).T
-        df_model_params_subset = df_model_params.loc[
-            [
-                "bank_account_farmer_1",
-                "bank_account_farmer_2",
-                "bank_account_forestry_1",
-                "bank_account_forestry_1",
-            ],
-            :,
-        ]
-        df_model_params_subset["group"] = df_model_params_subset.index.values
-        df_model_params_subset["group"] = df_model_params_subset["group"].apply(
-            lambda x: x.split("_")[2]
-        )
-        df_model_params_subset = df_model_params_subset.reset_index()
-        df_model_params_subset["index"] = df_model_params_subset["index"].apply(
-            lambda x: "_".join(x.split("_")[2:4])
-        )
-        df_model_params_subset.groupby("group").sum().plot(
-            ax=ax_gdp, kind="bar", stacked=True, legend=None, rot=0
+        # GDP & UNEMPLOYMENT of current round (!)#
+        # ---------------------------------------------------------------------
+        vis_data_dict = {}
+
+        for var in ["bank_account", "income", "unemployment"]:
+            d = {}
+            for player in self.players[:-1]:
+                d[player] = self.data_store[player][var][self.current_round]
+
+            # insert
+            vis_data_dict[var] = d
+
+        vis_data = pd.concat(
+            {
+                k: pd.DataFrame(v, index=["value"]).T
+                for k, v in vis_data_dict.items()
+            },
+            axis=0,
         )
 
-        # UNEMPLOYMENT
-        # TODO [low]: implement based on martina's function and 'df_model_params_subset'
+        # PLOT BANK ACCOUNTS
+        # ---------------------------------------------------------------------
+        df_bank_account = (
+            vis_data.iloc[vis_data.index.get_level_values(0) == "bank_account"]
+            .reset_index(level=[0, 1])
+            .drop("level_0", axis=1)
+        )
+        df_bank_account.plot.bar(
+            ax=ax_gdp, x="level_1", y="value", legend=False, alpha=0.8
+        )
+
+        ax_gdp.axhline(0, linestyle="--", linewidth=1)
+        ax_gdp.set_ylabel("Bank Account ($)")
+        ax_gdp.set_xlabel(None)
+        ax_gdp.grid(which="major", axis="y", linestyle="--")
+        ax_gdp.set_xticklabels([])
+
+        # PLOT UNEMPLOYMENT
+        # ---------------------------------------------------------------------
+        df_unempl = (
+            vis_data.iloc[vis_data.index.get_level_values(0) == "unemployment"]
+            .reset_index(level=[0, 1])
+            .drop("level_0", axis=1)
+        )
+
+        # linear scaling
+        df_unempl["value_reverse"] = 100 - df_unempl["value"]
+
+        # plot
+        df_unempl.plot.bar(
+            ax=ax_empl,
+            x="level_1",
+            y="value_reverse",
+            legend=False,
+            color="#e6550d",
+            alpha=0.7,
+        )
+        ax_empl.axhline(0, linestyle="--", linewidth=1)
+        ax_empl.set_ylabel("Employees (MAX = 50)")
+        ax_empl.set_yscale("log")
+        ax_empl.set_xlabel(None)
+        # ax_empl.set_ylim(1, 100)
+
+        # remove all y tick labels
+        ax_empl.set_yticks([], minor=False)  # major
+        ax_empl.set_yticks([], minor=True)  # minor
 
         # labeling
-        ax_bar.set_ylabel("Property (# pixels)")
-        ax_gdp.set_ylabel("GDP ($)")
-        ax_gdp.set_xlabel(None)
-        ax_empl.set_ylabel("Unempl. (%)")
-        ax_empl.set_ylim(0, 100)
+        # ---------------------------------------------------------------------
+        ax_bar.set_ylabel("Distribution of Parcels")
 
         # create title
         title = "Round {}".format(self.get_rounds(current=True))

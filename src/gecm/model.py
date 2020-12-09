@@ -302,7 +302,13 @@ def money_farmer(
             d_sheep = area_sheep[current_round] - area_sheep[current_round - 1]
         except:
             pass
-        d_cattle = area_cattle[current_round] - area_cattle[current_round - 1]
+
+        try:
+            d_cattle = (
+                area_cattle[current_round] - area_cattle[current_round - 1]
+            )
+        except IndexError as msg:
+            d_cattle = 0
         d_n_forest = (
             area_n_forest[current_round] - area_n_forest[current_round - 1]
         )  # necessary to potentially allow two changes (i.e. a rise or native forests and cattle on cost of sheep )
@@ -342,19 +348,24 @@ def money_farmer(
                 * LANDUSE_CHANGE
                 * n_forest_price[current_round]
             )
-        # earning from the area
-        m_area = (area_sheep[current_round] * sheep_price[current_round]) + (
-            area_cattle[current_round] * cattle_price[current_round]
-        )
+        try:
+            # earning from the area
+            m_area = (
+                area_sheep[current_round] * sheep_price[current_round]
+            ) + (area_cattle[current_round] * cattle_price[current_round])
+        except IndexError as msg:
+            m_area = area_sheep[current_round] * sheep_price[current_round]
+
         # divided by 10 to reduce that profit
+        reduction_factor = 0.4
         if teamwork == True and teams <= current_round:
             m_teamwork = (
                 area_c_forest[current_round]
                 * c_forest_price[current_round]
-                / 10
+                / reduction_factor
                 + area_n_forest[current_round]
                 * n_forest_price[current_round]
-                / 10
+                / reduction_factor
             )
         if brexit <= current_round:
             m_brexit = (SUBSIDIES - 1) * (
@@ -364,11 +375,21 @@ def money_farmer(
             #    m_brexit += d_n_forest * (SUBSIDIES - 1)
         m_tourism = tourism_factor * m_area - m_area
 
-        earning = (
-            (m_area + m_change + m_tourism + m_teamwork + m_brexit)
-            * gdp_pc_scotland
-            / (50 * (area_sheep[current_round] + area_cattle[current_round]))
-        )
+        try:
+            earning = (
+                (m_area + m_change + m_tourism + m_teamwork + m_brexit)
+                * gdp_pc_scotland
+                / (
+                    50
+                    * (area_sheep[current_round] + area_cattle[current_round])
+                )
+            )
+        except IndexError as msg:
+            earning = (
+                (m_area + m_change + m_tourism + m_teamwork + m_brexit)
+                * gdp_pc_scotland
+                / (50 * (area_sheep[current_round]))
+            )
 
         # inserted
         if earning > 30000 and earning < 45000:
@@ -388,7 +409,7 @@ def money_farmer(
     return (
         earning,
         bank_current,
-    )  # , m_area, m_change, m_tourism, m_brexit, m_teamwork
+    )
 
 
 def money_forester(
