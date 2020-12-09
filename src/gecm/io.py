@@ -105,7 +105,6 @@ def parse_mgmt_decisions(
 
     # fetch data via gdrive api
     for i, sheet_name in enumerate(sheets):
-        print(sheet_name)
 
         # 1) fetch data
         data_dict = get_google_sheet(

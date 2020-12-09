@@ -149,7 +149,7 @@ def yield_map(field):
 
 
 # maybe calculate the tourist
-def tourism_factor(tourism_factor_matrix, gdp_tourism_factor):
+def tourism_factor(tourism_factor_matrix, gdp_tourism_factor, brexit=False):
     """
     Args:
         tourism_factor_matrix:     part of lulc mapping at which tourism_factor takes place (20x20)
@@ -158,7 +158,9 @@ def tourism_factor(tourism_factor_matrix, gdp_tourism_factor):
 
     cattle, sheep, n_forest, c_forest = yield_map(tourism_factor_matrix)
     sum = cattle + sheep + n_forest + c_forest
-    m, n = tourism_factor_matrix.shape
+
+    # hardcoded by felix
+    m, n = 20, 20
     sum = max(sum, m * n)
 
     number_tourists = sheep * 2 + n_forest * 3 - c_forest * 5
@@ -169,7 +171,14 @@ def tourism_factor(tourism_factor_matrix, gdp_tourism_factor):
     # beach bonus
     if sum < m ** 2 - 10:
         tourism_factor = max(0.95, tourism_factor * 1.2)
-    return number_tourists, tourism_factor
+
+    # in the short run, maybe slightly more travel restrictions or more opposition
+    # of europeans to travel there?
+    if brexit:
+        return number_tourists - 100, tourism_factor
+    else:
+        return number_tourists, tourism_factor
+
 
 
 def crop_field(field):

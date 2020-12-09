@@ -218,7 +218,7 @@ class MatrixGame(object):
                 # True/False for each game round, defaults to False for rounds 0, 1 and 2
                 "ssda_block_choice": [None],
                 # TODO: move to params
-                "tourist_number": [4800],
+                "tourist_number": [1000],
                 # TODO: move to params
                 "tourist_factor": [1],
             },
@@ -868,15 +868,17 @@ class MatrixGame(object):
             tourism_mask = self.block_definition_matrix_pixel_lvl == ssda_choice
 
             # copy lulc_matrix data from stack
-            mar = self.lulc_matrix_stack[:, :, self.current_round - 1].copy()
+            mar = self.lulc_matrix_stack[:, :, self.current_round].copy()
 
             # update the mask of the lulc_matrix based on the block mask
             mar[~tourism_mask] = np.ma.masked
 
             # calc
+            brexit_boolean = True if self.current_round == self.brexit_round else False
             number_tourists, tourism_factor = model.tourism_factor(
                 tourism_factor_matrix=mar,
                 gdp_tourism_factor=40,  # TODO: removing hard-coding needed?
+                brexit=brexit_boolean
             )
 
             # update lists
@@ -1367,7 +1369,11 @@ class MatrixGame(object):
 
         # tight
         gs.tight_layout(fig)
-        # gs.update(top=0.95)
+
+        # show number of tourists that visited the biosphere
+        n_tourist_per_round = self.data_store["SSDA"]["tourist_number"][self.current_round]
+        # self.brexit_round
+        print("In this year, {} tourists visited the biosphere.".format(n_tourist_per_round))
 
     def show_all_mgmt_decisions(self):
         return vis.show_all_mgmt_decisions(self.df_mgmt_decisions_long)
@@ -1410,7 +1416,6 @@ if __name__ == "__main__":
 
     # initialise: this step is crucial, else nothing works!
     field.initialise(granularity=gran)
-    print(field.current_round)
 
     # plot
     # field.show(granularity=granularity)
@@ -1418,11 +1423,6 @@ if __name__ == "__main__":
 
     # update round
     field.update_round_number()
-
-    # some changes
-    print(field.lulc_matrix.shape)
-
-    # plot new map (and potentially also the changes)
 
     # show
     plt.show()
