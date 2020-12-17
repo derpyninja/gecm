@@ -6,6 +6,8 @@ This project was created in Autumn 2020 as part of [Foundations of Ecosystem Man
 a graduate-level course offered at **[ETH Zurich](https://ethz.ch/en.html)**. The team members were Lena Wunderlin, Martina Buck, Marco Barandun, 
 Ella-Mona Chevalley and Felix Zaussinger.
 
+![Example Dashboard](gecm_dashboard.png?raw=true "Dashboard")
+
 Collaboration
 =============
 

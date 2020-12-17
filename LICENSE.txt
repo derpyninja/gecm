@@ -15,6 +15,6 @@ derives, entirely or substantially, from the functionality of the Software.
 Any license notice or attribution required by the License must also include
 this Commons Cause License Condition notice.
 
-Software: **gecm**, a simple software for ecosystem management games on 2D maps
-License: **The MIT License (MIT)**
-Licensor: **Felix Zaussinger** (derpyninja) and **Martina Buck** (martinabuck)
+Software: gecm, a simple software for ecosystem management games on 2D maps
+License: The MIT License (MIT)
+Licensor: Felix Zaussinger (derpyninja) and Martina Buck (martinabuck)
