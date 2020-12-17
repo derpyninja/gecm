@@ -2,7 +2,7 @@
 # $ conda create --name <env> --file <this file>
 # platform: osx-64
 affine=2.3.0=py_0
-aiohttp=3.7.2=py38h4d0b108_0
+aiohttp=3.7.3=py38h5406a74_0
 appdirs=1.4.4=pyh9f0ad1d_0
 appnope=0.1.0=py38h32f6830_1002
 argon2-cffi=20.1.0=py38h4d0b108_2
@@ -19,10 +19,10 @@ boost-cpp=1.74.0=he5d75e3_0
 brotlipy=0.7.0=py38h94c058a_1001
 bzip2=1.0.8=haf1e3a3_3
 c-ares=1.16.1=haf1e3a3_3
-ca-certificates=2020.6.20=hecda079_0
+ca-certificates=2020.12.5=h033912b_0
 cachetools=4.1.1=py_0
 cairo=1.16.0=h360c52f_1006
-certifi=2020.6.20=py38h5347e94_2
+certifi=2020.12.5=py38h50d1736_0
 cffi=1.14.3=py38h9edaa1b_1
 cfitsio=3.470=h4472c5d_7
 chardet=3.0.4=py38h5347e94_1008
@@ -52,7 +52,7 @@ giflib=5.2.1=h0b31af3_2
 glib=2.66.2=hb1e8313_0
 google-api-core=1.22.2=py38h32f6830_0
 google-api-python-client=1.12.5=pyh9f0ad1d_0
-google-auth=1.23.0=pyhd8ed1ab_0
+google-auth=1.24.0=pyhd3deb0d_0
 google-auth-httplib2=0.0.4=pyh9f0ad1d_0
 google-auth-oauthlib=0.4.2=pyhd8ed1ab_0
 googleapis-common-protos=1.52.0=py38h50d1736_1
@@ -106,7 +106,7 @@ libnghttp2=1.41.0=h7580e61_2
 libopenblas=0.3.12=openmp_h54245bb_1
 libpng=1.6.37=hb0a8c7a_2
 libpq=12.3=haa216e0_2
-libprotobuf=3.13.0.1=hab81aa3_0
+libprotobuf=3.14.0=hfd3ada9_0
 libsodium=1.0.18=haf1e3a3_1
 libspatialindex=1.9.3=h4a8c4bd_3
 libspatialite=5.0.0=hc85de81_0
@@ -120,9 +120,9 @@ markupsafe=1.1.1=py38h94c058a_2
 matplotlib=3.3.2=py38h32f6830_1
 matplotlib-base=3.3.2=py38had0acaf_1
 mistune=0.8.4=py38h4d0b108_1002
-multidict=4.7.5=py38h4d0b108_2
+multidict=5.1.0=py38h5406a74_0
 munch=2.5.0=py_0
-mypy_extensions=0.4.3=py38h32f6830_2
+mypy_extensions=0.4.3=py38h50d1736_2
 mysql-common=8.0.21=2
 mysql-libs=8.0.21=hfb8f7af_2
 nbclient=0.5.1=py_0
@@ -130,20 +130,20 @@ nbconvert=6.0.7=py38h32f6830_2
 nbformat=5.0.8=py_0
 ncurses=6.2=hb1e8313_2
 nest-asyncio=1.4.1=py_0
-notebook=6.1.4=py38h32f6830_1
+notebook=6.1.5=py38h50d1736_0
 nspr=4.29=hb1e8313_1
 nss=3.47=hc0980d9_0
 numpy=1.19.2=py38ha98150c_1
 oauthlib=3.0.1=py_0
 olefile=0.46=pyh9f0ad1d_1
 openjpeg=2.3.1=h254dc36_3
-openssl=1.1.1h=haf1e3a3_0
+openssl=1.1.1i=h35c211d_0
 packaging=20.4=pyh9f0ad1d_0
 pandas=1.1.3=py38h48ddb8e_2
 pandoc=2.11.0.4=h22f3db7_0
 pandocfilters=1.4.2=py_1
 parso=0.7.1=pyh9f0ad1d_0
-pathspec=0.8.0=pyh9f0ad1d_0
+pathspec=0.8.1=pyhd3deb0d_0
 patsy=0.5.1=py_0
 pcre=8.44=hb1e8313_0
 pexpect=4.8.0=pyh9f0ad1d_2
@@ -158,7 +158,7 @@ proj=7.1.1=h45baca5_3
 prometheus_client=0.8.0=pyh9f0ad1d_0
 prompt-toolkit=3.0.8=py_0
 prompt_toolkit=3.0.8=0
-protobuf=3.13.0.1=py38h11c0d25_1
+protobuf=3.14.0=py38h0a5c65b_0
 ptyprocess=0.6.0=py_1001
 pyasn1=0.4.8=py_0
 pyasn1-modules=0.2.7=py_0
@@ -184,7 +184,7 @@ qtconsole=4.7.7=pyh9f0ad1d_0
 qtpy=1.9.0=py_0
 rasterio=1.1.7=py38hcfd527e_1
 readline=8.0=h0678c8f_2
-regex=2020.10.28=py38h7e3306e_0
+regex=2020.11.13=py38h7e3306e_0
 requests=2.24.0=pyh9f0ad1d_0
 requests-oauthlib=1.3.0=pyh9f0ad1d_0
 rsa=4.6=pyh9f0ad1d_0
@@ -195,7 +195,7 @@ seaborn-base=0.11.0=py_0
 send2trash=1.5.0=py_0
 setuptools=49.6.0=py38h5347e94_2
 shapely=1.7.1=py38h8918236_1
-simplejson=3.17.2=py38h4d0b108_1
+simplejson=3.17.2=py38h5406a74_1
 six=1.15.0=pyh9f0ad1d_0
 snuggs=1.4.7=py_0
 sqlite=3.33.0=h960bd1c_1
@@ -207,7 +207,7 @@ tk=8.6.10=hb0a8c7a_1
 toml=0.10.2=pyhd8ed1ab_0
 tornado=6.0.4=py38h4d0b108_2
 traitlets=5.0.5=py_0
-typed-ast=1.4.1=py38h0b31af3_0
+typed-ast=1.4.1=py38h7e3306e_1
 typing-extensions=3.7.4.3=0
 typing_extensions=3.7.4.3=py_0
 tzcode=2020a=h0b31af3_0
@@ -219,7 +219,7 @@ wheel=0.35.1=pyh9f0ad1d_0
 widgetsnbextension=3.5.1=py38h32f6830_4
 xerces-c=3.2.3=h0a0444a_1
 xz=5.2.5=haf1e3a3_1
-yarl=1.6.2=py38h4d0b108_0
+yarl=1.6.3=py38h5406a74_0
 zeromq=4.3.3=hb1e8313_2
 zipp=3.4.0=py_0
 zlib=1.2.11=h7795811_1010
