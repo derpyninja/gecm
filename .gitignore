@@ -1,10 +1,10 @@
 # Manual exclusions: all files > 50 MB MUST be excluded (!)
 /data/raw/
 
-# Google API credentials (needed for accessing gdrive)
+# Google API credentials (needed for accessing gdrive on individual basis)
 google_api_credentials.json
 
-# config file (needed for defining the gdrive documents we need in the code)
+# config file (needed for linking to gdrive documents on individual basis)
 config.ini
 
 # Temporary and binary files
